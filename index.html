@@ -45,7 +45,8 @@ input,select,textarea{font-family:var(--font-body); font-size:15px;}
   color:var(--cream); padding:28px 20px 22px; text-align:center; position:relative;
 }
 .brand{display:inline-flex; align-items:center; gap:10px; font-family:var(--font-display); font-size:20px; letter-spacing:.02em; color:var(--gold-light);}
-.brand-mark{width:22px; height:22px; display:inline-block;}
+.corner-logo-badge{position:absolute; top:14px; left:18px; background:#fff; border-radius:6px; padding:5px 9px; display:inline-flex; align-items:center; line-height:0; box-shadow:0 1px 3px rgba(0,0,0,0.15);}
+.corner-logo-badge img{height:20px; width:auto; display:block;}
 .app-header h1{color:var(--white); font-size:clamp(22px,4vw,30px); margin-top:10px;}
 .app-header p{color:#cfe0d6; font-size:14px; margin-top:6px; max-width:520px; margin-left:auto; margin-right:auto;}
 
@@ -202,7 +203,12 @@ footer a{color:var(--dark-green); text-decoration:underline;}
 <body>
 
 <header class="app-header">
-  <div class="brand"><span class="brand-mark">⌂</span> Metentis Patrimoine</div>
+  <div class="corner-logo-badge" id="cornerLogoBadge" style="display:none;">
+    <img id="brandLogo" alt="Metentis Patrimoine">
+  </div>
+  <div class="brand">
+    <span id="brandText">Metentis Patrimoine</span>
+  </div>
   <h1>Recueil d'informations & objectifs patrimoniaux</h1>
   <p>Ce questionnaire nous permet de mieux vous connaître afin de vous proposer un conseil patrimonial personnalisé et conforme à la réglementation.</p>
   <div class="progress-wrap">
@@ -242,6 +248,12 @@ footer a{color:var(--dark-green); text-decoration:underline;}
    ========================================================= */
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/mdennlnn";
 
+/* Logo Metentis (PNG ou JPEG de préférence, en base64) : remplacer la chaîne vide ci-dessous par
+   "data:image/png;base64,XXXXX..." une fois le logo fourni. Utilisé à la fois dans l'en-tête du
+   questionnaire et dans le PDF généré. Tant que ce champ est vide, un pictogramme de repli s'affiche. */
+const METENTIS_LOGO_BASE64 = "data:image/png;base64,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";
+const METENTIS_LOGO_RATIO = 444/92; // largeur/hauteur du logo recadre
+
 /* ============ STATE ============ */
 const OBJECTIFS = [
   "Optimiser la rentabilité de ses placements",
@@ -258,6 +270,18 @@ const OBJECTIFS = [
   "Se prémunir contre les accidents de la vie"
 ];
 const MIN_OBJECTIFS = 3;
+
+function investorLabel(prefix, fallback){
+  const s = state[prefix];
+  if(!s) return fallback;
+  const full = `${s.prenom||''} ${s.nom||''}`.trim();
+  return full || fallback;
+}
+function ownerLabel(value){
+  if(value==="Investisseur 1") return investorLabel("investisseur1","Investisseur 1");
+  if(value==="Investisseur 2") return investorLabel("investisseur2","Investisseur 2");
+  return value;
+}
 
 function emptyInvestisseur(){
   return {
@@ -456,7 +480,7 @@ function renderRepeatable(listKey, ownerAware){
         const owners = ["Commun","Investisseur 1"];
         if(state.coInvestisseur) owners.push("Investisseur 2");
         html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><div class="owner-chip-row">` +
-          owners.map(o=>`<span class="owner-chip ${val===o?'active':''}" data-owner="${path}" data-value="${o}">${o}</span>`).join('') +
+          owners.map(o=>`<span class="owner-chip ${val===o?'active':''}" data-owner="${path}" data-value="${o}">${ownerLabel(o)}</span>`).join('') +
           `</div></div>`;
       } else if(f.type==="select"){
         html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><select data-path="${path}"><option value="">— Sélectionner —</option>${f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
@@ -511,7 +535,7 @@ function renderIdentite(){
   <p class="section-intro">Ces informations nous permettent de vous identifier conformément à nos obligations réglementaires (connaissance client, LCB-FT).</p>
 
   <div class="subsection">
-    <span class="tag" style="display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px;">Investisseur 1</span>
+    <span class="tag" style="display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px;">${investorLabel("investisseur1","Investisseur 1")}</span>
     ${investorFieldSet("investisseur1", false)}
   </div>
 
@@ -521,7 +545,7 @@ function renderIdentite(){
   </div>
 
   <div class="investor2-block ${state.coInvestisseur?'show':''}" id="investisseur2Block">
-    <span class="tag">Investisseur 2</span>
+    <span class="tag">${investorLabel("investisseur2","Investisseur 2")}</span>
     ${investorFieldSet("investisseur2", true)}
   </div>
   `;
@@ -534,7 +558,7 @@ function renderFamille(){
   <h2 class="section-title">Situation de famille</h2>
 
   <div class="subsection">
-    <h3>Investisseur 1</h3>
+    <h3>${investorLabel("investisseur1","Investisseur 1")}</h3>
     ${radioGroup("investisseur1.situationFamille","Situation de famille",["Marié(e)","Célibataire","Séparé(e)","Divorcé(e)","Union libre","Pacsé(e)"],true)}
     ${field(state,"investisseur1.situationFamilleDepuis","Depuis le","date")}
     <div id="regimeBlock1" style="${['Marié(e)'].includes(getVal(state,'investisseur1.situationFamille'))?'':'display:none;'}">
@@ -549,7 +573,7 @@ function renderFamille(){
 
   ${inv2?`
   <div class="subsection">
-    <h3>Investisseur 2</h3>
+    <h3>${investorLabel("investisseur2","Investisseur 2")}</h3>
     ${radioGroup("investisseur2.situationFamille","Situation de famille",["Marié(e)","Célibataire","Séparé(e)","Divorcé(e)","Union libre","Pacsé(e)"],true)}
     ${field(state,"investisseur2.situationFamilleDepuis","Depuis le","date")}
     <div id="regimeBlock2" style="${['Marié(e)'].includes(getVal(state,'investisseur2.situationFamille'))?'':'display:none;'}">
@@ -628,7 +652,7 @@ function renderRevenus(){
         ${["Salaires","BNC","BIC","Pensions","Revenus fonciers","Dividendes","Autres"].map(o=>`<option value="${o}" ${r.nature===o?'selected':''}>${o}</option>`).join('')}
       </select></div>
       <div class="field"><label>Montant annuel (€)</label><input type="number" data-path="revenus[${idx}].montant" value="${r.montant||''}"></div>
-      <div class="field"><label>Détenteur</label><select data-path="revenus[${idx}].detenteur"><option value="">— Sélectionner —</option>${owners.map(o=>`<option value="${o}" ${r.detenteur===o?'selected':''}>${o}</option>`).join('')}</select></div>
+      <div class="field"><label>Détenteur</label><select data-path="revenus[${idx}].detenteur"><option value="">— Sélectionner —</option>${owners.map(o=>`<option value="${o}" ${r.detenteur===o?'selected':''}>${ownerLabel(o)}</option>`).join('')}</select></div>
     </div></div>`;
   });
   html += `</div><button type="button" class="btn-add" data-addrow="revenus">+ Ajouter une ligne de revenu</button>`;
@@ -642,7 +666,7 @@ function renderAvenir(){
   <h2 class="section-title">Vision de l'avenir</h2>
 
   <div class="subsection">
-    <h3>${inv2?"Investisseur 1":""}</h3>
+    <h3>${inv2?investorLabel("investisseur1","Investisseur 1"):""}</h3>
     ${field(state,"investisseur1.retraiteAge","À quel âge et comment envisagez-vous votre retraite (voyages, activités sportives…) ?","textarea",{span2:true})}
     <div class="grid2">
       ${field(state,"investisseur1.retraiteRevenusSouhaites","Revenu mensuel souhaité pour maintenir votre train de vie (€/mois)","number")}
@@ -650,7 +674,7 @@ function renderAvenir(){
     </div>
   </div>
   ${inv2?`<div class="subsection">
-    <h3>Investisseur 2</h3>
+    <h3>${investorLabel("investisseur2","Investisseur 2")}</h3>
     ${field(state,"investisseur2.retraiteAge","À quel âge et comment envisagez-vous votre retraite ?","textarea",{span2:true})}
     <div class="grid2">
       ${field(state,"investisseur2.retraiteRevenusSouhaites","Revenu mensuel souhaité (€/mois)","number")}
@@ -733,11 +757,11 @@ function renderObjectifs(){
   <p class="section-intro">Cliquez sur les objectifs dans l'ordre de priorité pour vous : le premier clic devient votre priorité n°1, le suivant n°2, etc. Cliquez à nouveau sur un objectif classé pour le retirer. Merci d'en classer au moins 3.</p>
 
   <div class="subsection">
-    <h3>${state.coInvestisseur?"Investisseur 1":"Vos priorités"}</h3>
+    <h3>${state.coInvestisseur?investorLabel("investisseur1","Investisseur 1"):"Vos priorités"}</h3>
     ${objList("investisseur1", rank1)}
   </div>
   ${state.coInvestisseur?`<div class="subsection">
-    <h3>Investisseur 2</h3>
+    <h3>${investorLabel("investisseur2","Investisseur 2")}</h3>
     ${objList("investisseur2", rank2)}
   </div>`:''}
 
@@ -803,16 +827,16 @@ function renderConformite(){
   <h2 class="section-title">Conformité réglementaire</h2>
 
   ${accordion("ppe","PPE — Personne Politiquement Exposée · en savoir plus", `Votre investisseur est une PPE s'il réside dans un autre État membre de l'Union européenne ou un pays tiers, s'il est exposé à des risques particuliers en raison des fonctions politiques, juridictionnelles ou administratives qu'il exerce ou a exercées dans les 12 derniers mois pour le compte d'un autre État, si des membres directs de sa famille ou des personnes connues pour lui être étroitement associées exercent ou ont exercé ces fonctions dans les 12 derniers mois pour le compte d'un autre État.`)}
-  ${ppeBlock("investisseur1", inv2?"Investisseur 1":"")}
-  ${inv2?ppeBlock("investisseur2","Investisseur 2"):''}
+  ${ppeBlock("investisseur1", inv2?investorLabel("investisseur1","Investisseur 1"):"")}
+  ${inv2?ppeBlock("investisseur2",investorLabel("investisseur2","Investisseur 2")):''}
 
   ${accordion("fatca","FATCA — Foreign Account Tax Compliance Act · en savoir plus", `FATCA est une réglementation américaine visant à lutter contre l'évasion fiscale par des contribuables américains, qui tend à collecter annuellement auprès des institutions financières étrangères les informations concernant les avoirs et revenus enregistrés sur les comptes détenus par les contribuables américains en dehors des États-Unis. Votre investisseur peut être résident aux États-Unis d'Amérique à des fins fiscales notamment dans les cas suivants : il est citoyen américain, il est titulaire d'une carte verte ("green card"), il réside aux États-Unis d'Amérique, ou y a séjourné durant une certaine durée. Auto-certification à remplir par le client : à défaut de réponse ou si vous avez le statut de personne américaine, votre contrat sera reporté à l'administration fiscale française en application de la réglementation américaine FATCA.`)}
-  ${fatcaBlock("investisseur1", inv2?"Investisseur 1":"")}
-  ${inv2?fatcaBlock("investisseur2","Investisseur 2"):''}
+  ${fatcaBlock("investisseur1", inv2?investorLabel("investisseur1","Investisseur 1"):"")}
+  ${inv2?fatcaBlock("investisseur2",investorLabel("investisseur2","Investisseur 2")):''}
 
   ${accordion("crs","CRS / AEOI — Échange automatique d'informations · en savoir plus", `CRS permet aux administrations fiscales d'avoir la connaissance systématique des avoirs financiers détenus à l'étranger par leurs résidents fiscaux. Cela s'applique à l'ensemble des pays de l'OCDE.`)}
-  ${crsBlock("investisseur1", inv2?"Investisseur 1":"")}
-  ${inv2?crsBlock("investisseur2","Investisseur 2"):''}
+  ${crsBlock("investisseur1", inv2?investorLabel("investisseur1","Investisseur 1"):"")}
+  ${inv2?crsBlock("investisseur2",investorLabel("investisseur2","Investisseur 2")):''}
 
   ${accordion("rgpd","Protection des données personnelles (RGPD) · texte intégral", `Conformément à la réglementation en vigueur en matière de protection des données personnelles, les données personnelles du client et/ou prospect sont collectées par les consultants de Metentis Patrimoine qui agissent pour le compte de la société Metentis Patrimoine, responsables de traitement. Ces données sont traitées pour la fourniture des services qu'elles proposent : à des fins de gestion et/ou de suivi de l'exécution du contrat avec le responsable du traitement ; de conformité avec certaines obligations règlementaires relatives à la lutte contre le blanchiment et le financement du terrorisme (L561-5 et suivants CMF), de connaissance client (article 314-44 RG AMF, article L132-27-1 Code des assurances, R519-21 du code monétaire et financier) ; et d'agrégation des bases de données clients communes au groupe de sociétés. Metentis Patrimoine s'engage à supprimer les données personnelles des prospects trois ans après la date de la signature de ce document. Metentis Patrimoine s'engage à supprimer les données cinq ans après la cessation de la relation entre les responsables de traitement et le client. Metentis Patrimoine s'engage à supprimer les données personnelles cinq ans après la fin de l'engagement de location prévu par le dispositif fiscal en vigueur. Le client bénéficie d'un droit d'accès, de rectification, d'effacement ou de portabilité des données ainsi que d'un droit de limitation ou d'opposition au traitement de ses données personnelles qu'il peut exercer à l'adresse suivante : thibaud.sarron@metentis-patrimoine.com. Le Client et/ou le prospect peut introduire une réclamation au sujet du traitement de ses données personnelles. Les données recueillies pourront être transmises à des tiers (assureurs, sociétés de gestion, promoteurs immobiliers, etc.) en vue de l'accomplissement des diligences nécessaires au traitement des souscriptions et/ou commandes immobilières et/ou de la gestion de la relation. Le client accepte de libérer par les présentes la société Metentis Patrimoine de son obligation de respect du secret professionnel, l'autorise à transmettre les données à toute société exploitant un agrégateur de données. Le consentement susvisé est volontaire et peut être radié ou annulé à tout moment. Le client reconnaît qu'une modification de sa situation peut avoir une incidence sur le service d'investissement ou le conseil fourni. Aussi, doivent être signalées à Metentis Patrimoine, toutes les modifications nécessaires. Si le client ne communique pas les informations requises, le consultant ne pourra pas poursuivre sa mission et devra s'abstenir de recommander les opérations, instruments de services. Au regard de la règlementation FATCA, le client certifie sur l'honneur l'exactitude des réponses apportées ci-dessus et s'engage à informer sans délai l'assureur de tout changement de circonstances pouvant modifier son statut et à fournir une nouvelle auto certification sur le formulaire approprié accompagné des justificatifs éventuels dans les 30 jours suivant ce changement.`)}
 
@@ -1056,28 +1080,58 @@ function generatePDF(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({unit:"pt", format:"a4"});
   const green = [26,58,46]; const gold=[200,169,110];
+  const logoDataUrl = (typeof METENTIS_LOGO_BASE64!=="undefined" && METENTIS_LOGO_BASE64) ? METENTIS_LOGO_BASE64 : null;
+  const logoRatio = (typeof METENTIS_LOGO_RATIO!=="undefined" && METENTIS_LOGO_RATIO) ? METENTIS_LOGO_RATIO : 4.8;
+  function logoFormat(){
+    if(logoDataUrl && logoDataUrl.includes("image/jpeg")) return "JPEG";
+    if(logoDataUrl && logoDataUrl.includes("image/jpg")) return "JPEG";
+    if(logoDataUrl && logoDataUrl.includes("image/webp")) return "WEBP";
+    return "PNG";
+  }
+  // Dessine le logo (fond blanc) dans un badge arrondi blanc, pour rester lisible sur fond vert foncé.
+  // Retourne la position x à partir de laquelle le texte adjacent peut commencer.
+  function drawLogoBadge(x, yTop, h){
+    if(!logoDataUrl) return x;
+    const w = h * logoRatio;
+    const padX = 9, padY = 6;
+    doc.setFillColor(255,255,255);
+    try{ doc.roundedRect(x-padX, yTop-padY, w+padX*2, h+padY*2, 4, 4, 'F'); }
+    catch(e){ doc.rect(x-padX, yTop-padY, w+padX*2, h+padY*2, 'F'); }
+    try{ doc.addImage(logoDataUrl, logoFormat(), x, yTop, w, h); }catch(e){}
+    return x + w + padX*2 + 12;
+  }
   let y = 0;
 
   function coverPage(){
-    doc.setFillColor(...green); doc.rect(0,0,595,180,'F');
-    doc.setTextColor(255,255,255); doc.setFont("times","bold"); doc.setFontSize(22);
-    doc.text("Metentis Patrimoine", 40, 70);
-    doc.setFontSize(15); doc.setFont("helvetica","normal");
-    doc.text("Recueil d'informations & objectifs patrimoniaux", 40, 100);
-    doc.setFontSize(10); doc.setTextColor(220,230,224);
-    doc.text(`Document généré le ${new Date().toLocaleDateString('fr-FR')}`, 40, 130);
+    doc.setFillColor(...green); doc.rect(0,0,595,116,'F');
+    if(logoDataUrl){ drawLogoBadge(16, 12, 18); }
+    doc.setTextColor(255,255,255); doc.setFont("times","bold"); doc.setFontSize(19);
+    doc.text("Metentis Patrimoine", 40, 48);
+    doc.setFontSize(11.5); doc.setFont("helvetica","normal");
+    doc.text("Recueil d'informations & objectifs patrimoniaux", 40, 70);
+    doc.setFontSize(9); doc.setTextColor(220,230,224);
+    doc.text(`Document généré le ${new Date().toLocaleDateString('fr-FR')}`, 40, 88);
     doc.setTextColor(0,0,0);
-    y = 220;
+    y = 145;
+  }
+  function runningHeader(){
+    if(logoDataUrl){ drawLogoBadge(16, 8, 12); }
+    doc.setFont("helvetica","bold"); doc.setFontSize(10.5); doc.setTextColor(...green);
+    doc.text("Metentis Patrimoine", 40, 28);
+    doc.setFont("helvetica","normal"); doc.setFontSize(7.8); doc.setTextColor(110,110,110);
+    doc.text("Recueil d'informations & objectifs patrimoniaux", 40, 42);
+    doc.setDrawColor(...gold); doc.setLineWidth(0.75); doc.line(40,50,555,50);
+    doc.setTextColor(0,0,0);
   }
   function h(title){
-    if(y>750){ doc.addPage(); y=50; }
+    if(y>750){ doc.addPage(); runningHeader(); y=90; }
     doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(...green);
     doc.text(title, 40, y); y+=8;
     doc.setDrawColor(...gold); doc.setLineWidth(1); doc.line(40,y,555,y); y+=18;
     doc.setTextColor(0,0,0); doc.setFont("helvetica","normal"); doc.setFontSize(10);
   }
   function qa(question, answer){
-    if(y>770){ doc.addPage(); y=50; }
+    if(y>770){ doc.addPage(); runningHeader(); y=90; }
     doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(120,120,120);
     const qLines = doc.splitTextToSize(String(question), 515);
     doc.text(qLines, 40, y);
@@ -1086,23 +1140,26 @@ function generatePDF(){
     const isEmpty = answer===undefined || answer===null || answer==="" || answer===false;
     const ans = isEmpty ? "Non renseigné" : (answer===true ? "Oui" : String(answer));
     const aLines = doc.splitTextToSize(ans, 515);
-    if(y + aLines.length*13 > 800){ doc.addPage(); y=50; }
+    if(y + aLines.length*13 > 800){ doc.addPage(); runningHeader(); y=90; }
     doc.text(aLines, 40, y);
     y += aLines.length*13 + 9;
   }
   function table(head, rows){
     if(rows.length===0) return;
     doc.autoTable({
-      startY:y, head:[head], body:rows, margin:{left:40,right:40, bottom:45},
+      startY:y, head:[head], body:rows, margin:{left:40,right:40, bottom:45, top:90},
       styles:{fontSize:7.5, cellPadding:4}, headStyles:{fillColor:green, textColor:255},
-      theme:'striped'
+      theme:'striped',
+      didDrawPage:(data)=>{ if(data.pageNumber>1) runningHeader(); }
     });
     y = doc.lastAutoTable.finalY + 20;
   }
 
   coverPage();
 
-  function investorSection(prefix, label){
+  function investorLabelPdf(prefix, fallback){ return investorLabel(prefix, fallback); }
+
+  function block_identite(prefix,label){
     const s = state[prefix];
     h(`${label} — Identité & coordonnées`);
     qa("Civilité, nom et prénom", `${s.civilite||''} ${s.nom||''} ${s.prenom||''}`.trim());
@@ -1119,7 +1176,10 @@ function generatePDF(){
       qa("Souhaitez-vous un accompagnement pour le financement ?", s.projetAccompagnement);
       qa("Description du projet (montant, lieu, type, apport, travaux…)", s.projetDescription);
     }
+  }
 
+  function block_famille(prefix,label){
+    const s = state[prefix];
     h(`${label} — Situation de famille`);
     qa("Situation de famille", s.situationFamille);
     qa("Depuis le", s.situationFamilleDepuis);
@@ -1128,32 +1188,43 @@ function generatePDF(){
     }
     qa("Envisagez-vous de vous marier / pacser ?", s.envisageMariage);
     if(s.envisageMariage==="Oui") qa("Date envisagée", s.envisageMariageDate);
+  }
 
+  function block_pro(prefix,label){
+    const s = state[prefix];
     h(`${label} — Profession`);
     qa("Statut professionnel", s.statutPro);
     qa("Libellé de la profession", s.libelleProfession);
     qa("Depuis quelle date", s.proDepuis);
     qa("Évolution professionnelle envisagée à court/moyen terme", s.evolutionPro);
-
     h(`${label} — Situation fiscale (facultatif)`);
     qa("Connaissez-vous votre TMI ?", s.tmiConnu);
     if(s.tmiConnu==="Oui") qa("Votre TMI", s.tmiValeur);
     qa("Changement de vie impactant la fiscalité", s.changementFiscal);
+  }
 
+  function block_avenir(prefix,label){
+    const s = state[prefix];
     h(`${label} — Vision de l'avenir`);
     qa("Âge et modalités de retraite envisagés", s.retraiteAge);
     qa("Revenu mensuel souhaité à la retraite", s.retraiteRevenusSouhaites?`${s.retraiteRevenusSouhaites} €/mois`:'');
     qa("Pension de retraite estimée (système par répartition)", s.retraitePensionEstimee?`${s.retraitePensionEstimee} €/mois`:'');
     qa("Transmission de patrimoine anticipée ?", s.transmissionAnticipee);
     qa("Détail / accompagnement souhaité pour la transmission", s.transmissionDetail);
+  }
 
+  function block_objectifs(prefix,label){
+    const s = state[prefix];
     h(`${label} — Objectifs patrimoniaux prioritaires`);
     const ranked = Object.entries(s.objectifsRank||{}).sort((a,b)=>a[1]-b[1]).map(([idx])=>OBJECTIFS[idx]);
     if(ranked.length===0) qa("Objectifs classés", "");
     ranked.forEach((o,i)=>qa(`Priorité n°${i+1}`, o));
     qa("Épargne mensuelle envisageable", s.epargneMensuelle?`${s.epargneMensuelle} €/mois`:'');
     qa("Épargne de précaution souhaitée", s.epargnePrecaution?`${s.epargnePrecaution} €`:'');
+  }
 
+  function block_conformite(prefix,label){
+    const s = state[prefix];
     h(`${label} — Conformité réglementaire`);
     qa("Personne Politiquement Exposée (PPE) ?", s.ppeExpose);
     qa("Lien familial / association étroite avec une PPE ?", s.ppeLien);
@@ -1168,42 +1239,57 @@ function generatePDF(){
     qa("Possédez-vous le n° fiscal de ce pays ?", s.crsNumFiscal);
   }
 
-  investorSection("investisseur1", "Investisseur 1");
-  if(state.coInvestisseur) investorSection("investisseur2", "Investisseur 2");
+  const label1 = investorLabelPdf("investisseur1","Investisseur 1");
+  const label2 = investorLabelPdf("investisseur2","Investisseur 2");
+  const inv2 = state.coInvestisseur;
 
+  // 1. Identité (dans l'ordre exact du questionnaire)
+  block_identite("investisseur1", label1);
+  if(inv2) block_identite("investisseur2", label2);
+
+  // 2. Famille
+  block_famille("investisseur1", label1);
+  if(inv2) block_famille("investisseur2", label2);
   h("Protection du conjoint et de la famille");
   qa("Souhaitez-vous que l'on réfléchisse à une solution de protection ? Situation particulière ?", state.protectionConjoint);
-
   h("Enfants");
   table(["Nom","Prénom","Naissance","À charge","Commun","Garde alt.","Inv.1","Inv.2"],
     state.enfants.map(e=>[e.nom,e.prenom,e.dateNaissance,e.aCharge?"Oui":"Non",e.commun?"Oui":"Non",e.gardeAlternee?"Oui":"Non",e.invest1?"Oui":"Non",e.invest2?"Oui":"Non"]));
   if(state.enfants.length===0) qa("Enfants renseignés", "");
 
+  // 3. Profession & fiscal
+  block_pro("investisseur1", label1);
+  if(inv2) block_pro("investisseur2", label2);
   h("Revenus annuels");
-  table(["Nature","Montant annuel (€)","Détenteur"], (state.revenus||[]).map(r=>[r.nature,r.montant,r.detenteur]));
+  table(["Nature","Montant annuel (€)","Détenteur"], (state.revenus||[]).map(r=>[r.nature,r.montant,ownerLabel(r.detenteur)]));
   if(!state.revenus || state.revenus.length===0) qa("Détail des revenus", "");
 
+  // 4. Vision de l'avenir
+  block_avenir("investisseur1", label1);
+  if(inv2) block_avenir("investisseur2", label2);
+
+  // 5. Patrimoine
   h("Placements financiers");
   table(["Type","Établissement","Souscription","Valeur (€)","Vers. annuel (€)","Propriété"],
-    state.placements.map(p=>[p.type==="Autre"?`Autre : ${p.typeAutre||''}`:p.type, p.etablissement,p.dateSouscription,p.valeurActuelle,p.versementAnnuel,p.propriete]));
+    state.placements.map(p=>[p.type==="Autre"?`Autre : ${p.typeAutre||''}`:p.type, p.etablissement,p.dateSouscription,p.valeurActuelle,p.versementAnnuel,ownerLabel(p.propriete)]));
   if(state.placements.length===0) qa("Placements renseignés", "");
 
   h("Immobilier");
   table(["Type","Ville","RP/Sec/Locatif","Location","Valeur actuelle (€)","Loyer net (€)","Propriété"],
-    state.immobilier.map(i=>[i.type,i.ville,i.rpSecondaire,i.locationType,i.valeurActuelle,i.loyerNet,i.propriete]));
+    state.immobilier.map(i=>[i.type,i.ville,i.rpSecondaire,i.locationType,i.valeurActuelle,i.loyerNet,ownerLabel(i.propriete)]));
   if(state.immobilier.length===0) qa("Biens immobiliers renseignés", "");
 
   h("Patrimoine professionnel / autres actifs");
-  table(["Libellé","Valeur actuelle (€)","Propriété"], state.patrimoinePro.map(p=>[p.libelle,p.valeurActuelle,p.propriete]));
+  table(["Libellé","Valeur actuelle (€)","Propriété"], state.patrimoinePro.map(p=>[p.libelle,p.valeurActuelle,ownerLabel(p.propriete)]));
   if(state.patrimoinePro.length===0) qa("Autres actifs renseignés", "");
 
   h("Charges");
-  table(["Libellé","Par mois (€)","Propriété"], state.charges.map(c=>[c.libelle,c.parMois,c.propriete]));
+  table(["Libellé","Par mois (€)","Propriété"], state.charges.map(c=>[c.libelle,c.parMois,ownerLabel(c.propriete)]));
   if(state.charges.length===0) qa("Charges renseignées", "");
 
   h("Crédits");
   table(["Type","Prêteur","Taux (%)","Montant (€)","CRD (€)","Mensualité (€)","Propriété"],
-    state.credits.map(c=>[c.type,c.etablissementPreteur,c.tauxNominal,c.montantCredit,c.capitalRestantDu,c.mensualites,c.propriete]));
+    state.credits.map(c=>[c.type,c.etablissementPreteur,c.tauxNominal,c.montantCredit,c.capitalRestantDu,c.mensualites,ownerLabel(c.propriete)]));
   if(state.credits.length===0) qa("Crédits renseignés", "");
 
   h("Satisfaction & projets patrimoniaux");
@@ -1213,19 +1299,27 @@ function generatePDF(){
   qa("Autres projets d'achats à venir", state.autresProjetsAchat);
   qa("Précisions sur les objectifs", state.objectifsPrecisions);
 
+  // 6. Objectifs
+  block_objectifs("investisseur1", label1);
+  if(inv2) block_objectifs("investisseur2", label2);
+
+  // 7. Conformité réglementaire & signature (en dernier, comme sur le questionnaire)
+  block_conformite("investisseur1", label1);
+  if(inv2) block_conformite("investisseur2", label2);
+
   h("Signature & attestation");
   qa("Signé par", state.investisseur1.signatureNom);
   qa("Date de signature", state.investisseur1.signatureDate);
   qa("Consentement RGPD / PPE / FATCA / CRS", state.investisseur1.signatureConsent ? "Case cochée — accepté" : "Non renseigné");
 
   // Annexe RGPD — texte intégral, reproduit en entier (non replié)
-  doc.addPage(); y=50;
+  doc.addPage(); runningHeader(); y=90;
   h("Annexe — Protection des données personnelles (RGPD)");
   doc.setFont("helvetica","normal"); doc.setFontSize(8.3); doc.setTextColor(40,40,40);
   const rgpdText = "Conformément à la réglementation en vigueur en matière de protection des données personnelles, les données personnelles du client et/ou prospect sont collectées par les consultants de Metentis Patrimoine qui agissent pour le compte de la société Metentis Patrimoine, responsables de traitement. Ces données sont traitées pour la fourniture des services qu'elles proposent : à des fins de gestion et/ou de suivi de l'exécution du contrat avec le responsable du traitement ; de conformité avec certaines obligations règlementaires relatives à la lutte contre le blanchiment et le financement du terrorisme (L561-5 et suivants CMF), de connaissance client (article 314-44 RG AMF, article L132-27-1 Code des assurances, R519-21 du code monétaire et financier) ; et d'agrégation des bases de données clients communes au groupe de sociétés. Metentis Patrimoine s'engage à supprimer les données personnelles des prospects trois ans après la date de la signature de ce document. Metentis Patrimoine s'engage à supprimer les données cinq ans après la cessation de la relation entre les responsables de traitement et le client. Metentis Patrimoine s'engage à supprimer les données personnelles cinq ans après la fin de l'engagement de location prévu par le dispositif fiscal en vigueur. Le client bénéficie d'un droit d'accès, de rectification, d'effacement ou de portabilité des données ainsi que d'un droit de limitation ou d'opposition au traitement de ses données personnelles qu'il peut exercer à l'adresse suivante : thibaud.sarron@metentis-patrimoine.com. Le Client et/ou le prospect peut introduire une réclamation au sujet du traitement de ses données personnelles. Les données recueillies pourront être transmises à des tiers (assureurs, sociétés de gestion, promoteurs immobiliers, etc.) en vue de l'accomplissement des diligences nécessaires au traitement des souscriptions et/ou commandes immobilières et/ou de la gestion de la relation. Le client accepte de libérer par les présentes la société Metentis Patrimoine de son obligation de respect du secret professionnel, l'autorise à transmettre les données à toute société exploitant un agrégateur de données. Le consentement susvisé est volontaire et peut être radié ou annulé à tout moment. Le client reconnaît qu'une modification de sa situation peut avoir une incidence sur le service d'investissement ou le conseil fourni. Aussi, doivent être signalées à Metentis Patrimoine, toutes les modifications nécessaires. Si le client ne communique pas les informations requises, le consultant ne pourra pas poursuivre sa mission et devra s'abstenir de recommander les opérations, instruments de services. Au regard de la règlementation FATCA, le client certifie sur l'honneur l'exactitude des réponses apportées ci-dessus et s'engage à informer sans délai l'assureur de tout changement de circonstances pouvant modifier son statut et à fournir une nouvelle auto certification sur le formulaire approprié accompagné des justificatifs éventuels dans les 30 jours suivant ce changement.";
   const rgpdLines = doc.splitTextToSize(rgpdText, 515);
   rgpdLines.forEach(line=>{
-    if(y>800){ doc.addPage(); y=50; doc.setFont("helvetica","normal"); doc.setFontSize(8.3); doc.setTextColor(40,40,40); }
+    if(y>800){ doc.addPage(); runningHeader(); y=90; doc.setFont("helvetica","normal"); doc.setFontSize(8.3); doc.setTextColor(40,40,40); }
     doc.text(line, 40, y); y+=11.5;
   });
 
@@ -1235,16 +1329,19 @@ function generatePDF(){
 
 function addLegalFooter(doc){
   const totalPages = doc.internal.getNumberOfPages();
-  const legal = "METENTIS PATRIMOINE - 6 Rue Pouchet, 75017 PARIS - SIREN : 983 642 497   |   Conseiller en Investissements Financiers (CIF), Mandataire d'intermédiaire d'assurance (MIA) & Mandataire d'intermédiaire en Opérations de Banque et en Services de Paiement (MIOBSP) - Immatriculé à l'ORIAS sous le n°24001368 - www.orias.fr   |   Adhérent de l'ANACOFI-CIF, association agréée par l'AMF - R.C. Professionnelle MMA IARD Assurances n° 127 128 662";
+  const legal = "METENTIS PATRIMOINE - 6 Rue Pouchet, 75017 PARIS - SIREN : 983 642 497\nConseiller en Investissements Financiers (CIF), Mandataire d'intermédiaire d'assurance (MIA) & Mandataire d'intermédiaire en Opérations de Banque et en Services de Paiement (MIOBSP) - Immatriculé à l'ORIAS sous le n°24001368 - www.orias.fr\nAdhérent de l'ANACOFI-CIF, association agréée par l'AMF - R.C. Professionnelle MMA IARD Assurances n° 127 128 662";
+  const rawLines = legal.split("\n");
   for(let p=1;p<=totalPages;p++){
     doc.setPage(p);
-    doc.setDrawColor(220,220,220); doc.setLineWidth(0.5); doc.line(40,812,555,812);
-    doc.setFont("helvetica","normal"); doc.setFontSize(6.2); doc.setTextColor(120,120,120);
-    const lines = doc.splitTextToSize(legal, 480);
-    let fy = 821;
-    lines.forEach(l=>{ doc.text(l, 40, fy); fy+=7.5; });
-    doc.setFontSize(7);
-    doc.text(`${p} / ${totalPages}`, 555, 821, {align:"right"});
+    doc.setDrawColor(220,220,220); doc.setLineWidth(0.5); doc.line(40,808,555,808);
+    doc.setFont("helvetica","normal"); doc.setFontSize(6.3); doc.setTextColor(120,120,120);
+    let fy = 817;
+    rawLines.forEach(raw=>{
+      const wrapped = doc.splitTextToSize(raw, 500);
+      wrapped.forEach(l=>{ doc.text(l, 297.5, fy, {align:"center"}); fy+=7.5; });
+    });
+    doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text(`${p} / ${totalPages}`, 555, 817, {align:"right"});
     doc.setTextColor(0,0,0);
   }
 }
@@ -1305,6 +1402,12 @@ document.getElementById("kycForm").addEventListener("submit", async (e)=>{
 document.getElementById("dlPdfBtn").addEventListener("click", generatePDF);
 
 /* ============ INIT ============ */
+if(METENTIS_LOGO_BASE64){
+  const logoEl = document.getElementById("brandLogo");
+  const cornerBadge = document.getElementById("cornerLogoBadge");
+  if(logoEl){ logoEl.src = METENTIS_LOGO_BASE64; }
+  if(cornerBadge){ cornerBadge.style.display = "inline-flex"; }
+}
 restoreStateFromURL();
 renderSteps();
 </script>
