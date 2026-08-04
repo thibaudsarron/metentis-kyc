@@ -1090,21 +1090,23 @@ function generatePDF(){
   }
   // Dessine le logo (fond blanc) dans un badge arrondi blanc, pour rester lisible sur fond vert foncé.
   // Retourne la position x à partir de laquelle le texte adjacent peut commencer.
-  function drawLogoBadge(x, yTop, h){
-    if(!logoDataUrl) return x;
+  function drawLogoBadge(rightEdge, yTop, h){
+    if(!logoDataUrl) return;
     const w = h * logoRatio;
     const padX = 9, padY = 6;
+    const badgeW = w + padX*2;
+    const badgeLeft = rightEdge - badgeW;
+    const imgX = badgeLeft + padX;
     doc.setFillColor(255,255,255);
-    try{ doc.roundedRect(x-padX, yTop-padY, w+padX*2, h+padY*2, 4, 4, 'F'); }
-    catch(e){ doc.rect(x-padX, yTop-padY, w+padX*2, h+padY*2, 'F'); }
-    try{ doc.addImage(logoDataUrl, logoFormat(), x, yTop, w, h); }catch(e){}
-    return x + w + padX*2 + 12;
+    try{ doc.roundedRect(badgeLeft, yTop-padY, badgeW, h+padY*2, 4, 4, 'F'); }
+    catch(e){ doc.rect(badgeLeft, yTop-padY, badgeW, h+padY*2, 'F'); }
+    try{ doc.addImage(logoDataUrl, logoFormat(), imgX, yTop, w, h); }catch(e){}
   }
   let y = 0;
 
   function coverPage(){
     doc.setFillColor(...green); doc.rect(0,0,595,116,'F');
-    if(logoDataUrl){ drawLogoBadge(16, 12, 18); }
+    if(logoDataUrl){ drawLogoBadge(579, 12, 18); }
     doc.setTextColor(255,255,255); doc.setFont("times","bold"); doc.setFontSize(19);
     doc.text("Metentis Patrimoine", 40, 48);
     doc.setFontSize(11.5); doc.setFont("helvetica","normal");
@@ -1115,7 +1117,7 @@ function generatePDF(){
     y = 145;
   }
   function runningHeader(){
-    if(logoDataUrl){ drawLogoBadge(16, 8, 12); }
+    if(logoDataUrl){ drawLogoBadge(579, 8, 12); }
     doc.setFont("helvetica","bold"); doc.setFontSize(10.5); doc.setTextColor(...green);
     doc.text("Metentis Patrimoine", 40, 28);
     doc.setFont("helvetica","normal"); doc.setFontSize(7.8); doc.setTextColor(110,110,110);
