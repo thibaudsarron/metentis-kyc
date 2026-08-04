@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recueil d'Informations & Objectifs Patrimoniaux — Metentis Patrimoine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --dark-green:#1a3a2e;
+  --dark-green-2:#0f2a20;
+  --gold:#c8a96e;
+  --gold-light:#e2cda0;
+  --cream:#f7f6f2;
+  --white:#ffffff;
+  --ink:#1c2420;
+  --muted:#6b7570;
+  --line:#e2ddd2;
+  --error:#a5432f;
+  --ok:#3f6b52;
+  --radius:4px;
+  --shadow: 0 4px 24px rgba(15,42,32,0.08);
+  --font-display:'Playfair Display', serif;
+  --font-body:'Outfit', sans-serif;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--cream); color:var(--ink);
+  font-family:var(--font-body); font-weight:400; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--font-display); color:var(--dark-green-2); margin:0; font-weight:600;}
+button{font-family:var(--font-body); cursor:pointer;}
+input,select,textarea{font-family:var(--font-body); font-size:15px;}
+:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+
+/* ============ SHELL ============ */
+.app-header{
+  background:linear-gradient(160deg,var(--dark-green-2),var(--dark-green) 60%);
+  color:var(--cream); padding:28px 20px 22px; text-align:center; position:relative;
+}
+.brand{display:inline-flex; align-items:center; gap:10px; font-family:var(--font-display); font-size:20px; letter-spacing:.02em; color:var(--gold-light);}
+.brand-mark{width:22px; height:22px; display:inline-block;}
+.app-header h1{color:var(--white); font-size:clamp(22px,4vw,30px); margin-top:10px;}
+.app-header p{color:#cfe0d6; font-size:14px; margin-top:6px; max-width:520px; margin-left:auto; margin-right:auto;}
+
+.progress-wrap{max-width:760px; margin:0 auto; padding:14px 20px 0;}
+.progress-track{height:4px; background:rgba(255,255,255,0.18); border-radius:2px; overflow:hidden;}
+.progress-fill{height:100%; background:var(--gold); transition:width .35s ease;}
+.progress-label{color:#cfe0d6; font-size:12px; margin-top:8px; letter-spacing:.05em; text-transform:uppercase;}
+
+.steps-nav{display:flex; justify-content:center; gap:6px; flex-wrap:wrap; max-width:820px; margin:16px auto 0; padding:0 16px 20px;}
+.step-pill{
+  border:1px solid rgba(255,255,255,0.25); background:transparent; color:#b9cbc0;
+  font-size:12px; padding:6px 12px; border-radius:20px; transition:.2s; white-space:nowrap;
+}
+.step-pill.active{background:var(--gold); border-color:var(--gold); color:var(--dark-green-2); font-weight:600;}
+.step-pill.done{border-color:var(--gold-light); color:var(--gold-light);}
+
+main{max-width:760px; margin:-8px auto 60px; padding:0 20px;}
+.card{
+  background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:32px clamp(20px,4vw,44px); margin-top:24px; border:1px solid var(--line);
+}
+.section-eyebrow{color:var(--gold); font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:600;}
+.section-title{margin-top:6px; font-size:clamp(20px,3vw,26px);}
+.section-intro{color:var(--muted); font-size:14px; margin-top:10px; line-height:1.6;}
+
+.subsection{margin-top:30px; padding-top:22px; border-top:1px solid var(--line);}
+.subsection:first-of-type{border-top:none; padding-top:0;}
+.subsection h3{font-size:16px; color:var(--dark-green); margin-bottom:4px;}
+.subsection .hint{color:var(--muted); font-size:13px; margin-bottom:14px;}
+
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.grid2 .span-2, .grid3 .span-2{grid-column:1/-1;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+@media(max-width:620px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12.5px; color:var(--dark-green); font-weight:600; margin-bottom:5px; letter-spacing:.01em;}
+.field .opt{font-weight:400; color:var(--muted); font-style:italic;}
+.field input[type=text], .field input[type=number], .field input[type=date],
+.field input[type=email], .field input[type=tel], .field select, .field textarea{
+  width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--cream); color:var(--ink); transition:.15s;
+}
+.field textarea{min-height:70px; resize:vertical;}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--gold); background:var(--white);}
+
+.radio-row, .check-row{display:flex; gap:18px; flex-wrap:wrap; margin-top:4px;}
+.radio-opt, .check-opt{display:flex; align-items:center; gap:7px; font-size:14px; color:var(--ink); cursor:pointer;}
+.radio-opt input, .check-opt input{accent-color:var(--dark-green); width:16px; height:16px;}
+
+.investor-toggle{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  background:var(--cream); border:1px dashed var(--gold); border-radius:var(--radius);
+  padding:14px 18px; margin:20px 0 6px;
+}
+.investor-toggle .txt strong{display:block; color:var(--dark-green); font-size:14px;}
+.investor-toggle .txt span{font-size:12.5px; color:var(--muted);}
+.switch{position:relative; width:46px; height:26px; flex:none;}
+.switch input{opacity:0; width:0; height:0;}
+.slider{position:absolute; inset:0; background:#cdd6cf; border-radius:20px; transition:.2s;}
+.slider:before{content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:white; border-radius:50%; transition:.2s;}
+.switch input:checked + .slider{background:var(--dark-green);}
+.switch input:checked + .slider:before{transform:translateX(20px);}
+
+.investor2-block{border-left:3px solid var(--gold); padding-left:18px; margin-top:16px; display:none;}
+.investor2-block.show{display:block;}
+.investor2-block .tag{display:inline-block; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:10px;}
+
+/* repeatable rows */
+.rep-list{display:flex; flex-direction:column; gap:14px; margin-top:10px;}
+.rep-item{
+  border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; background:#fcfbf9; position:relative;
+}
+.rep-item-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+.rep-item-head .idx{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); font-weight:700;}
+.rep-remove{background:none; border:none; color:var(--error); font-size:13px; font-weight:600; padding:4px 8px;}
+.rep-remove:hover{text-decoration:underline;}
+.btn-add{
+  border:1.5px dashed var(--dark-green); background:transparent; color:var(--dark-green);
+  padding:10px 16px; border-radius:var(--radius); font-size:13.5px; font-weight:600; margin-top:6px;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.btn-add:hover{background:var(--cream);}
+.empty-note{color:var(--muted); font-size:13px; font-style:italic; margin-top:6px;}
+
+.owner-chip-row{display:flex; gap:8px; margin-top:2px; flex-wrap:wrap;}
+.owner-chip{border:1px solid var(--line); border-radius:20px; padding:6px 12px; font-size:12.5px; color:var(--muted); cursor:pointer; transition:.15s;}
+.owner-chip.active{background:var(--dark-green); border-color:var(--dark-green); color:white;}
+
+/* objectives */
+.obj-list{display:flex; flex-direction:column; gap:8px; margin-top:14px;}
+.obj-card{
+  display:flex; align-items:center; gap:14px; border:1px solid var(--line); border-radius:var(--radius);
+  padding:12px 14px; background:#fcfbf9; transition:.15s; cursor:pointer;
+}
+.obj-card:hover{border-color:var(--gold);}
+.obj-card.ranked{background:var(--dark-green); border-color:var(--dark-green);}
+.obj-card.ranked .obj-label{color:white;}
+.obj-rank{
+  width:30px; height:30px; border-radius:50%; border:2px solid var(--line); flex:none;
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--muted);
+  background:white;
+}
+.obj-card.ranked .obj-rank{background:var(--gold); border-color:var(--gold); color:var(--dark-green-2);}
+.obj-label{font-size:14px; color:var(--ink); flex:1;}
+.obj-note{color:var(--muted); font-size:13px; margin-top:10px;}
+
+/* accordion */
+.accordion{border:1px solid var(--line); border-radius:var(--radius); margin-top:14px; overflow:hidden;}
+.accordion-head{
+  display:flex; justify-content:space-between; align-items:center; padding:14px 16px;
+  background:var(--cream); font-size:14px; font-weight:600; color:var(--dark-green);
+}
+.accordion-head .chev{transition:.2s;}
+.accordion.open .chev{transform:rotate(180deg);}
+.accordion-body{max-height:0; overflow:hidden; transition:max-height .3s ease;}
+.accordion.open .accordion-body{max-height:2000px;}
+.accordion-body-inner{padding:14px 16px; font-size:13px; color:var(--muted); line-height:1.7; background:white;}
+
+/* nav buttons */
+.step-actions{display:flex; justify-content:space-between; margin-top:32px; gap:12px;}
+.btn{
+  padding:13px 26px; border-radius:var(--radius); font-size:14px; font-weight:600; border:none; transition:.15s;
+  letter-spacing:.01em;
+}
+.btn-primary{background:var(--dark-green); color:white;}
+.btn-primary:hover{background:var(--dark-green-2);}
+.btn-ghost{background:transparent; color:var(--dark-green); border:1.5px solid var(--line);}
+.btn-ghost:hover{border-color:var(--dark-green);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+
+.attest-box{background:var(--cream); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-top:18px;}
+.attest-box label.check-opt{align-items:flex-start; font-size:13.5px; line-height:1.6;}
+.attest-box .check-opt input{margin-top:3px;}
+
+/* success screen */
+.success-wrap{text-align:center; padding:50px 20px;}
+.success-wrap .icon{font-size:44px;}
+.success-wrap h2{margin-top:14px;}
+.success-wrap p{color:var(--muted); margin-top:10px; max-width:440px; margin-left:auto; margin-right:auto;}
+.pdf-btn-row{display:flex; gap:12px; justify-content:center; margin-top:24px; flex-wrap:wrap;}
+
+footer{text-align:center; color:var(--muted); font-size:11px; line-height:1.7; padding:22px 20px 34px; max-width:760px; margin:0 auto; border-top:1px solid var(--line); margin-top:20px;}
+footer a{color:var(--dark-green); text-decoration:underline;}
+
+.req::after{content:" *"; color:var(--error);}
+.error-msg{color:var(--error); font-size:12.5px; margin-top:4px; display:none;}
+.field.invalid input, .field.invalid select{border-color:var(--error);}
+.field.invalid .error-msg{display:block;}
+
+@media print{ .app-header, .steps-nav, .step-actions, footer{display:none;} }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand"><span class="brand-mark">⌂</span> Metentis Patrimoine</div>
+  <h1>Recueil d'informations & objectifs patrimoniaux</h1>
+  <p>Ce questionnaire nous permet de mieux vous connaître afin de vous proposer un conseil patrimonial personnalisé et conforme à la réglementation.</p>
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:14%"></div></div>
+    <div class="progress-label" id="progressLabel">Étape 1 sur 7</div>
+  </div>
+</header>
+
+<nav class="steps-nav" id="stepsNav"></nav>
+
+<main>
+  <form id="kycForm" novalidate>
+    <div id="stepsContainer"></div>
+  </form>
+
+  <div class="card success-wrap" id="successScreen" style="display:none;">
+    <div class="icon">🌿</div>
+    <h2>Merci, votre dossier a bien été transmis</h2>
+    <p>Thibaud Sarron reçoit votre recueil d'informations et reviendra vers vous prochainement. Vous pouvez télécharger un récapitulatif PDF de vos réponses ci-dessous pour vos archives.</p>
+    <div class="pdf-btn-row">
+      <button type="button" class="btn btn-primary" id="dlPdfBtn">Télécharger le PDF récapitulatif</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  METENTIS PATRIMOINE — 6 Rue Pouchet, 75017 PARIS — SIREN : 983 642 497<br>
+  Conseiller en Investissements Financiers (CIF), Mandataire d'intermédiaire d'assurance (MIA) & Mandataire d'intermédiaire en Opérations de Banque et en Services de Paiement (MIOBSP) — Immatriculé à l'ORIAS sous le numéro 24001368 — <a href="https://www.orias.fr" target="_blank" rel="noopener">www.orias.fr</a><br>
+  Adhérent de l'ANACOFI-CIF, association agréée par l'Autorité des Marchés Financiers — R.C. Professionnelle MMA IARD Assurances n° 127 128 662
+</footer>
+
+<script>
+/* =========================================================
+   METENTIS — KYC PERSONNE PHYSIQUE — CONFIGURATION
+   1) Remplacer FORMSPREE_ENDPOINT par votre endpoint Formspree
+   2) Héberger ce fichier tel quel sur GitHub Pages
+   ========================================================= */
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/VOTRE_ID_FORMULAIRE";
+
+/* ============ STATE ============ */
+const OBJECTIFS = [
+  "Optimiser la rentabilité de ses placements",
+  "Optimiser sa fiscalité",
+  "Aider ses enfants",
+  "Protéger le conjoint survivant",
+  "Protéger ses proches",
+  "Préparer sa retraite",
+  "Financer un achat immobilier",
+  "Obtenir des revenus complémentaires",
+  "Se constituer un patrimoine",
+  "Transmettre son patrimoine",
+  "Transmettre son entreprise",
+  "Se prémunir contre les accidents de la vie"
+];
+const MIN_OBJECTIFS = 3;
+
+function emptyInvestisseur(){
+  return {
+    civilite:"", nom:"", prenom:"", nomNaissance:"", dateNaissance:"", lieuNaissance:"", nationalite:"",
+    mobile:"", email:"",
+    adresseNum:"", adresseCP:"", adresseVille:"", adressePays:"France",
+    logement:"", projetAchatRP:"", projetAccompagnement:"", projetDescription:"",
+    situationFamille:"", situationFamilleDepuis:"", regimeMatrimonial:"", regimeMatrimonialPrecision:"",
+    envisageMariage:"", envisageMariageDate:"",
+    statutPro:"", libelleProfession:"", proDepuis:"", evolutionPro:"",
+    tmiConnu:"", changementFiscal:"",
+    retraiteAge:"", retraiteRevenusSouhaites:"", retraitePensionEstimee:"",
+    transmissionAnticipee:"", transmissionDetail:"",
+    epargneMensuelle:"", epargnePrecaution:"",
+    objectifsRank:{},
+    ppeExpose:"", ppeLien:"", ppeFonction:"", ppeLieu:"", ppeAutrePays:"", ppeDepuis:"",
+    fatcaCitoyenUSA:"", fatcaResidentUSA:"", fatcaTIN:"",
+    crsResidentAutre:"", crsPays:"", crsNumFiscal:"",
+    signatureNom:"", signatureDate:"", signatureConsent:false
+  };
+}
+
+const state = {
+  coInvestisseur:false,
+  protectionConjoint:"",
+  enfants:[],
+  placements:[],
+  immobilier:[],
+  patrimoinePro:[],
+  charges:[],
+  credits:[],
+  autresProjetsAchat:"",
+  investisseur1: emptyInvestisseur(),
+  investisseur2: emptyInvestisseur()
+};
+
+/* ============ REPEATABLE SCHEMAS ============ */
+const SCHEMAS = {
+  enfants:{
+    label:"enfant", labelPlural:"enfants",
+    fields:[
+      {k:"nom", label:"Nom", type:"text"},
+      {k:"prenom", label:"Prénom", type:"text"},
+      {k:"dateNaissance", label:"Date de naissance", type:"date"},
+      {k:"aCharge", label:"À charge", type:"checkbox"},
+      {k:"commun", label:"Enfant commun", type:"checkbox"},
+      {k:"gardeAlternee", label:"Garde alternée", type:"checkbox"},
+      {k:"invest1", label:"Rattaché à Investisseur 1", type:"checkbox"},
+      {k:"invest2", label:"Rattaché à Investisseur 2", type:"checkbox", investorOnly:true}
+    ]
+  },
+  placements:{
+    label:"placement", labelPlural:"placements",
+    fields:[
+      {k:"type", label:"Type de placement", type:"select", span:2, options:["Livret A","LDD / LDDS","Livret Jeune","PEL","CEL","Compte à terme","Compte courant","Assurance vie","PER (Plan Épargne Retraite)","Compte-titres ordinaire (CTO)","PEA","PEA-PME","SCPI","FCPI / FIP","Épargne salariale (PEE / PERCO)","Cryptomonnaies","Autre"]},
+      {k:"typeAutre", label:"Précisez le support", type:"text", span:2, showIf:(item)=>item.type==="Autre"},
+      {k:"etablissement", label:"Établissement financier", type:"text"},
+      {k:"dateSouscription", label:"Date de souscription", type:"date"},
+      {k:"valeurActuelle", label:"Valeur actuelle (€)", type:"number"},
+      {k:"versementAnnuel", label:"Versement annuel (€)", type:"number"},
+      {k:"particularite", label:"Particularité / composition", type:"textarea", span:2},
+      {k:"propriete", label:"Propriété", type:"owner"}
+    ]
+  },
+  immobilier:{
+    label:"bien immobilier", labelPlural:"biens immobiliers",
+    fields:[
+      {k:"type", label:"Type de bien", type:"text", span:2},
+      {k:"ville", label:"Ville", type:"text"},
+      {k:"dateAcquisition", label:"Date d'acquisition", type:"date"},
+      {k:"valeurAcquisition", label:"Valeur d'acquisition (€)", type:"number"},
+      {k:"valeurActuelle", label:"Valeur actuelle (€)", type:"number"},
+      {k:"rpSecondaire", label:"RP / Secondaire / Locatif", type:"select", options:["Résidence principale","Résidence secondaire","Investissement locatif"]},
+      {k:"locationType", label:"Location nue / meublée", type:"select", options:["Non loué","Location nue","Location meublée"]},
+      {k:"loyerBrut", label:"Loyer brut annuel (€)", type:"number"},
+      {k:"loyerNet", label:"Loyer net annuel (€)", type:"number"},
+      {k:"demembrement", label:"Démembrement ?", type:"text"},
+      {k:"particulariteSCI", label:"Particularités (détention SCI IS/IR)", type:"text", span:2},
+      {k:"propriete", label:"Propriété", type:"owner"}
+    ]
+  },
+  patrimoinePro:{
+    label:"actif", labelPlural:"autres actifs",
+    fields:[
+      {k:"libelle", label:"Libellé (parts de société, fonds de commerce, objet d'art…)", type:"text", span:2},
+      {k:"valeurActuelle", label:"Valeur actuelle (€)", type:"number"},
+      {k:"particularite", label:"Particularités à expliquer", type:"textarea", span:2},
+      {k:"propriete", label:"Propriété", type:"owner"}
+    ]
+  },
+  charges:{
+    label:"charge", labelPlural:"charges",
+    fields:[
+      {k:"libelle", label:"Libellé (loyer, pension alimentaire…)", type:"text", span:2},
+      {k:"parMois", label:"Montant par mois (€)", type:"number"},
+      {k:"propriete", label:"Propriété", type:"owner"}
+    ]
+  },
+  credits:{
+    label:"crédit", labelPlural:"crédits",
+    fields:[
+      {k:"type", label:"Type de crédit", type:"text", span:2},
+      {k:"etablissementPreteur", label:"Établissement prêteur", type:"text"},
+      {k:"dateEmprunt", label:"Date d'emprunt", type:"date"},
+      {k:"dateFin", label:"Date de fin", type:"date"},
+      {k:"tauxNominal", label:"Taux nominal (%)", type:"number"},
+      {k:"montantCredit", label:"Montant du crédit (€)", type:"number"},
+      {k:"capitalRestantDu", label:"Capital restant dû (€)", type:"number"},
+      {k:"mensualites", label:"Mensualités (€)", type:"number"},
+      {k:"particularite", label:"Particularité", type:"text", span:2},
+      {k:"propriete", label:"Propriété", type:"owner"}
+    ]
+  }
+};
+
+/* ============ STEP DEFINITIONS ============ */
+const STEPS = [
+  {id:"identite", short:"Identité", title:"Situation personnelle", render:renderIdentite},
+  {id:"famille", short:"Famille", title:"Situation de famille", render:renderFamille},
+  {id:"pro", short:"Pro & Fiscal", title:"Situation professionnelle & fiscale", render:renderPro},
+  {id:"avenir", short:"Avenir", title:"Vision de l'avenir", render:renderAvenir},
+  {id:"patrimoine", short:"Patrimoine", title:"Votre patrimoine", render:renderPatrimoine},
+  {id:"objectifs", short:"Objectifs", title:"Vos objectifs", render:renderObjectifs},
+  {id:"conformite", short:"Conformité & signature", title:"Conformité réglementaire & signature", render:renderConformite}
+];
+let currentStep = 0;
+
+/* ============ HELPERS ============ */
+function field(obj, path, label, type, opts){
+  opts = opts || {};
+  const id = path.replace(/[.\[\]]/g,'_');
+  const val = getVal(obj, path);
+  let inner = "";
+  if(type==="text"||type==="number"||type==="date"||type==="email"||type==="tel"){
+    inner = `<input type="${type}" id="${id}" data-path="${path}" value="${val ? escapeHtml(val):''}" ${opts.required?'':''}>`;
+  } else if(type==="textarea"){
+    inner = `<textarea id="${id}" data-path="${path}">${val?escapeHtml(val):''}</textarea>`;
+  } else if(type==="select"){
+    inner = `<select id="${id}" data-path="${path}"><option value="">— Sélectionner —</option>` +
+      opts.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('') + `</select>`;
+  }
+  return `<div class="field ${opts.span2?'span-2':''}" ${opts.style?`style="${opts.style}"`:''}>
+    <label ${opts.required?'class="req"':''} for="${id}">${label}</label>
+    ${inner}
+  </div>`;
+}
+
+function radioGroup(path, label, options, required){
+  const val = getVal(state, path);
+  return `<div class="field">
+    <label ${required?'class="req"':''}>${label}</label>
+    <div class="radio-row">
+      ${options.map(o=>`<label class="radio-opt"><input type="radio" name="${path}" data-path="${path}" value="${o}" ${val===o?'checked':''}> ${o}</label>`).join('')}
+    </div>
+  </div>`;
+}
+
+function getVal(obj, path){
+  const parts = path.replace(/\[(\d+)\]/g,'.$1').split('.');
+  let cur = obj;
+  for(const p of parts){ if(cur==null) return ""; cur = cur[p]; }
+  return cur==null? "": cur;
+}
+function setVal(obj, path, value){
+  const parts = path.replace(/\[(\d+)\]/g,'.$1').split('.');
+  let cur = obj;
+  for(let i=0;i<parts.length-1;i++){ cur = cur[parts[i]]; }
+  cur[parts[parts.length-1]] = value;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* ============ REPEATABLE RENDERING ============ */
+function renderRepeatable(listKey, ownerAware){
+  const schema = SCHEMAS[listKey];
+  const items = state[listKey];
+  let html = `<div class="rep-list" id="repList_${listKey}">`;
+  if(items.length===0){
+    html += `<p class="empty-note">Aucun ${schema.label} ajouté pour l'instant.</p>`;
+  }
+  items.forEach((item, idx)=>{
+    html += `<div class="rep-item">
+      <div class="rep-item-head">
+        <span class="idx">${schema.label} ${idx+1}</span>
+        <button type="button" class="rep-remove" data-remove="${listKey}:${idx}">Supprimer</button>
+      </div>
+      <div class="grid2">`;
+    schema.fields.forEach(f=>{
+      if(f.investorOnly && !state.coInvestisseur) return;
+      if(f.showIf && !f.showIf(item)) return;
+      const path = `${listKey}[${idx}].${f.k}`;
+      const val = item[f.k];
+      const spanStyle = f.span===2 ? 'grid-column:1/-1;' : '';
+      if(f.type==="checkbox"){
+        html += `<div class="field" style="${spanStyle}"><label class="check-opt"><input type="checkbox" data-path="${path}" ${val?'checked':''}> ${f.label}</label></div>`;
+      } else if(f.type==="owner"){
+        const owners = ["Commun","Investisseur 1"];
+        if(state.coInvestisseur) owners.push("Investisseur 2");
+        html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><div class="owner-chip-row">` +
+          owners.map(o=>`<span class="owner-chip ${val===o?'active':''}" data-owner="${path}" data-value="${o}">${o}</span>`).join('') +
+          `</div></div>`;
+      } else if(f.type==="select"){
+        html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><select data-path="${path}"><option value="">— Sélectionner —</option>${f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+      } else if(f.type==="textarea"){
+        html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><textarea data-path="${path}">${val?escapeHtml(val):''}</textarea></div>`;
+      } else {
+        html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><input type="${f.type}" data-path="${path}" value="${val?escapeHtml(val):''}"></div>`;
+      }
+    });
+    html += `</div></div>`;
+  });
+  html += `</div><button type="button" class="btn-add" data-addrow="${listKey}">+ Ajouter ${schema.label==="autres actifs"?"un actif":"un "+schema.label}</button>`;
+  return html;
+}
+
+/* ============ STEP RENDERERS ============ */
+function investorFieldSet(prefix, isSecond){
+  return `
+  <div class="grid2">
+    ${radioGroupInline(`${prefix}.civilite`, "Civilité", ["Mr","Mme"])}
+    ${field(state, `${prefix}.nom`, "Nom", "text", {required:true})}
+    ${field(state, `${prefix}.prenom`, "Prénom", "text", {required:true})}
+    ${field(state, `${prefix}.nomNaissance`, "Nom de naissance", "text")}
+    ${field(state, `${prefix}.dateNaissance`, "Né(e) le", "date", {required:true})}
+    ${field(state, `${prefix}.lieuNaissance`, "Lieu de naissance", "text")}
+    ${field(state, `${prefix}.nationalite`, "Nationalité", "text")}
+    ${field(state, `${prefix}.mobile`, "Mobile", "tel", {required:true})}
+    ${field(state, `${prefix}.email`, "Email", "email", {required:true})}
+  </div>
+  <h3 style="margin-top:22px;font-size:14px;color:var(--dark-green);">Adresse</h3>
+  <div class="grid2">
+    ${field(state, `${prefix}.adresseNum`, "Numéro et rue", "text")}
+    ${field(state, `${prefix}.adresseCP`, "Code postal", "text")}
+    ${field(state, `${prefix}.adresseVille`, "Ville", "text")}
+    ${field(state, `${prefix}.adressePays`, "Pays de résidence", "text")}
+  </div>
+  <h3 style="margin-top:22px;font-size:14px;color:var(--dark-green);">Logement</h3>
+  ${radioGroup(`${prefix}.logement`, "Vous êtes", ["Propriétaire","Locataire","Logé à titre gratuit"])}
+  <div id="projetRP_${prefix.replace('.','_')}" style="${getVal(state,`${prefix}.logement`)==='Propriétaire'?'display:none;':''}">
+    ${radioGroup(`${prefix}.projetAchatRP`, "Projet d'achat de résidence principale ?", ["Oui","Non"])}
+    ${radioGroup(`${prefix}.projetAccompagnement`, "Souhaitez-vous un accompagnement pour le financement ?", ["Oui","Non"])}
+    ${field(state, `${prefix}.projetDescription`, "Décrivez votre projet (montant, lieu, type de logement, apport, travaux…)", "textarea", {span2:true})}
+  </div>
+  `;
+}
+function radioGroupInline(path, label, options){ return radioGroup(path, label, options); }
+
+function renderIdentite(){
+  return `
+  <div class="section-eyebrow">01 · Vos informations</div>
+  <h2 class="section-title">Situation personnelle</h2>
+  <p class="section-intro">Ces informations nous permettent de vous identifier conformément à nos obligations réglementaires (connaissance client, LCB-FT).</p>
+
+  <div class="subsection">
+    <span class="tag" style="display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px;">Investisseur 1</span>
+    ${investorFieldSet("investisseur1", false)}
+  </div>
+
+  <div class="investor-toggle">
+    <div class="txt"><strong>Ajouter un co-investisseur</strong><span>Conjoint, partenaire de PACS ou co-souscripteur du dossier</span></div>
+    <label class="switch"><input type="checkbox" id="coInvestisseurToggle" ${state.coInvestisseur?'checked':''}><span class="slider"></span></label>
+  </div>
+
+  <div class="investor2-block ${state.coInvestisseur?'show':''}" id="investisseur2Block">
+    <span class="tag">Investisseur 2</span>
+    ${investorFieldSet("investisseur2", true)}
+  </div>
+  `;
+}
+
+function renderFamille(){
+  const inv2 = state.coInvestisseur;
+  return `
+  <div class="section-eyebrow">02 · Votre foyer</div>
+  <h2 class="section-title">Situation de famille</h2>
+
+  <div class="subsection">
+    <h3>Investisseur 1</h3>
+    ${radioGroup("investisseur1.situationFamille","Situation de famille",["Marié(e)","Célibataire","Séparé(e)","Divorcé(e)","Union libre","Pacsé(e)"],true)}
+    ${field(state,"investisseur1.situationFamilleDepuis","Depuis le","date")}
+    <div id="regimeBlock1" style="${['Marié(e)'].includes(getVal(state,'investisseur1.situationFamille'))?'':'display:none;'}">
+      ${radioGroup("investisseur1.regimeMatrimonial","Régime matrimonial",["Sans contrat","Séparation de biens","Autre"],true)}
+      ${field(state,"investisseur1.regimeMatrimonialPrecision","Précisez si régime particulier","text")}
+    </div>
+    ${radioGroup("investisseur1.envisageMariage","Envisagez-vous de vous marier / pacser ?",["Oui","Non"])}
+    <div id="mariageDate1" style="${getVal(state,'investisseur1.envisageMariage')==='Oui'?'':'display:none;'}">
+      ${field(state,"investisseur1.envisageMariageDate","Date envisagée","date")}
+    </div>
+  </div>
+
+  ${inv2?`
+  <div class="subsection">
+    <h3>Investisseur 2</h3>
+    ${radioGroup("investisseur2.situationFamille","Situation de famille",["Marié(e)","Célibataire","Séparé(e)","Divorcé(e)","Union libre","Pacsé(e)"],true)}
+    ${field(state,"investisseur2.situationFamilleDepuis","Depuis le","date")}
+    <div id="regimeBlock2" style="${['Marié(e)'].includes(getVal(state,'investisseur2.situationFamille'))?'':'display:none;'}">
+      ${radioGroup("investisseur2.regimeMatrimonial","Régime matrimonial",["Sans contrat","Séparation de biens","Autre"],true)}
+      ${field(state,"investisseur2.regimeMatrimonialPrecision","Précisez si régime particulier","text")}
+    </div>
+  </div>`:''}
+
+  <div class="subsection">
+    <h3>Protection du conjoint et de la famille</h3>
+    <div class="hint">Souhaitez-vous que l'on réfléchisse ensemble à une solution pour mieux protéger votre conjoint et votre famille ? Une situation particulière dont nous devrions être au courant ?</div>
+    ${field(state,"protectionConjoint","Votre réponse","textarea",{span2:true})}
+  </div>
+
+  <div class="subsection">
+    <h3>Enfants</h3>
+    <div class="hint">Ajoutez chaque enfant à charge, commun ou issu d'une union précédente.</div>
+    ${renderRepeatable("enfants")}
+  </div>
+  `;
+}
+
+function renderPro(){
+  const inv2 = state.coInvestisseur;
+  return `
+  <div class="section-eyebrow">03 · Activité & fiscalité</div>
+  <h2 class="section-title">Situation professionnelle & fiscale</h2>
+  <p class="section-intro">Conformément à l'article L. 541-8-1 4° du code monétaire et financier, nous avons l'obligation de nous renseigner sur votre situation financière.</p>
+
+  <div class="subsection">
+    <h3>Investisseur 1 — Profession</h3>
+    ${radioGroup("investisseur1.statutPro","Statut",["Salarié(e)","Demandeur d'emploi","Fonctionnaire","Indépendant / Profession libérale","Chef d'entreprise","Étudiant(e)","Retraité(e)"],true)}
+    <div class="grid2">
+      ${field(state,"investisseur1.libelleProfession","Libellé de votre profession","text",{required:true})}
+      ${field(state,"investisseur1.proDepuis","Depuis quelle date","date",{required:true})}
+    </div>
+    ${field(state,"investisseur1.evolutionPro","Envisagez-vous une évolution de votre situation professionnelle à court/moyen terme ?","textarea",{span2:true, required:true})}
+  </div>
+
+  ${inv2?`<div class="subsection">
+    <h3>Investisseur 2 — Profession</h3>
+    ${radioGroup("investisseur2.statutPro","Statut",["Salarié(e)","Demandeur d'emploi","Fonctionnaire","Indépendant / Profession libérale","Chef d'entreprise","Étudiant(e)","Retraité(e)"],true)}
+    <div class="grid2">
+      ${field(state,"investisseur2.libelleProfession","Libellé de votre profession","text",{required:true})}
+      ${field(state,"investisseur2.proDepuis","Depuis quelle date","date",{required:true})}
+    </div>
+    ${field(state,"investisseur2.evolutionPro","Envisagez-vous une évolution de votre situation professionnelle à court/moyen terme ?","textarea",{span2:true, required:true})}
+  </div>`:''}
+
+  <div class="subsection">
+    <h3 class="req">Revenus annuels nets</h3>
+    <div class="hint">L'idéal serait de nous transmettre votre dernier avis d'imposition. Si vous avez des revenus fonciers ou BIC/BNC/BA, les annexes de déclaration seraient très utiles. Merci de renseigner au moins une ligne de revenu.</div>
+    ${renderRevenus()}
+  </div>
+
+  <div class="subsection">
+    <h3>Situation fiscale <span style="font-weight:400;color:var(--muted);font-size:12px;">(facultatif)</span></h3>
+    ${radioGroup("investisseur1.tmiConnu","Connaissez-vous votre TMI (tranche marginale d'imposition) ?",["Oui","Non"])}
+    <div id="tmiValeurBlock" style="${getVal(state,'investisseur1.tmiConnu')==='Oui'?'':'display:none;'}">
+      ${field(state,"investisseur1.tmiValeur","Votre tranche marginale d'imposition","select",{options:["11%","30%","41%","45%"], required:true})}
+    </div>
+    ${field(state,"investisseur1.changementFiscal","Si votre niveau de revenu a fortement évolué ou si un changement de vie peut impacter votre fiscalité (séparation, mariage, naissance, nouvelle réduction d'impôt, nouvelle catégorie de revenu…), précisez ici","textarea",{span2:true})}
+  </div>
+  `;
+}
+
+function renderRevenus(){
+  let html = `<div class="rep-list" id="repList_revenus">`;
+  if(state.revenus === undefined) state.revenus = [];
+  if(state.revenus.length===0){ html += `<p class="empty-note">Aucun revenu ajouté.</p>`; }
+  state.revenus.forEach((r,idx)=>{
+    const owners = ["Investisseur 1"]; if(state.coInvestisseur) owners.push("Investisseur 2");
+    html += `<div class="rep-item"><div class="rep-item-head"><span class="idx">Revenu ${idx+1}</span><button type="button" class="rep-remove" data-remove="revenus:${idx}">Supprimer</button></div>
+    <div class="grid3">
+      <div class="field"><label>Nature</label><select data-path="revenus[${idx}].nature"><option value="">— Sélectionner —</option>
+        ${["Salaires","BNC","BIC","Pensions","Revenus fonciers","Dividendes","Autres"].map(o=>`<option value="${o}" ${r.nature===o?'selected':''}>${o}</option>`).join('')}
+      </select></div>
+      <div class="field"><label>Montant annuel (€)</label><input type="number" data-path="revenus[${idx}].montant" value="${r.montant||''}"></div>
+      <div class="field"><label>Détenteur</label><select data-path="revenus[${idx}].detenteur"><option value="">— Sélectionner —</option>${owners.map(o=>`<option value="${o}" ${r.detenteur===o?'selected':''}>${o}</option>`).join('')}</select></div>
+    </div></div>`;
+  });
+  html += `</div><button type="button" class="btn-add" data-addrow="revenus">+ Ajouter une ligne de revenu</button>`;
+  return html;
+}
+
+function renderAvenir(){
+  const inv2 = state.coInvestisseur;
+  return `
+  <div class="section-eyebrow">04 · Retraite & transmission</div>
+  <h2 class="section-title">Vision de l'avenir</h2>
+
+  <div class="subsection">
+    <h3>${inv2?"Investisseur 1":""}</h3>
+    ${field(state,"investisseur1.retraiteAge","À quel âge et comment envisagez-vous votre retraite (voyages, activités sportives…) ?","textarea",{span2:true})}
+    <div class="grid2">
+      ${field(state,"investisseur1.retraiteRevenusSouhaites","Revenu mensuel souhaité pour maintenir votre train de vie (€/mois)","number")}
+      ${field(state,"investisseur1.retraitePensionEstimee","Pension de retraite estimée par répartition (€/mois)","number")}
+    </div>
+  </div>
+  ${inv2?`<div class="subsection">
+    <h3>Investisseur 2</h3>
+    ${field(state,"investisseur2.retraiteAge","À quel âge et comment envisagez-vous votre retraite ?","textarea",{span2:true})}
+    <div class="grid2">
+      ${field(state,"investisseur2.retraiteRevenusSouhaites","Revenu mensuel souhaité (€/mois)","number")}
+      ${field(state,"investisseur2.retraitePensionEstimee","Pension de retraite estimée (€/mois)","number")}
+    </div>
+  </div>`:''}
+
+  <div class="subsection">
+    <h3>Transmission de patrimoine</h3>
+    <div class="hint">Les droits de succession peuvent rapidement monter à 20 % et même jusqu'à 60 % dans certains cas.</div>
+    ${radioGroup("investisseur1.transmissionAnticipee","Avez-vous anticipé la transmission de votre patrimoine ?",["Oui","Non"])}
+    ${field(state,"investisseur1.transmissionDetail","Si oui, qu'avez-vous fait ? Si non, est-ce un sujet sur lequel vous aimeriez des conseils ?","textarea",{span2:true})}
+  </div>
+  `;
+}
+
+function renderPatrimoine(){
+  return `
+  <div class="section-eyebrow">05 · Votre patrimoine</div>
+  <h2 class="section-title">Placements, immobilier & engagements</h2>
+
+  <div class="subsection">
+    <h3>Placements financiers</h3>
+    <div class="hint">Livret A, Livret B, CEL, PEL, LEP, Livret Jeune, assurance vie, PEA, compte-titres, FIP, FCPI, SCPI, épargne retraite, épargne salariale, cryptomonnaies…</div>
+    ${renderRepeatable("placements")}
+  </div>
+
+  <div class="subsection">
+    <h3>Immobilier</h3>
+    <div class="hint">Résidence principale, secondaire, investissements locatifs, parts de SCI…</div>
+    ${renderRepeatable("immobilier")}
+  </div>
+
+  <div class="subsection">
+    <h3>Patrimoine professionnel (ou autre)</h3>
+    <div class="hint">Parts de sociétés, fonds de commerce, compte courant d'associé, trésorerie professionnelle, objet d'art, voiture de collection…</div>
+    ${renderRepeatable("patrimoinePro")}
+  </div>
+
+  <div class="subsection">
+    <h3>Charges</h3>
+    <div class="hint">Loyers, pensions alimentaires, pensions d'éducation…</div>
+    ${renderRepeatable("charges")}
+  </div>
+
+  <div class="subsection">
+    <h3>Crédits</h3>
+    <div class="hint">Crédits immobiliers, travaux, consommation, voitures…</div>
+    ${renderRepeatable("credits")}
+  </div>
+
+  <div class="subsection">
+    <h3>Satisfaction & projets</h3>
+    <div class="grid2">
+      ${field(state,"placementsSatisfaction","Êtes-vous satisfait(e) de vos placements actuels ? (note de 1 à 10)","number",{required:true})}
+      ${field(state,"reorganisationMontant","Si vous souhaitiez réorganiser certains placements pour un meilleur rendement, pour quel montant ?","number")}
+    </div>
+    ${field(state,"placementsInadaptes","Considérez-vous certains de vos placements comme inadaptés à vos attentes ? Lesquels et pourquoi ? (répondez \"Aucun\" si non concerné)","textarea",{span2:true, required:true})}
+    ${field(state,"autresProjetsAchat","Avez-vous d'autres projets d'achats conséquents à venir prochainement ? (répondez \"Non\" si non concerné)","textarea",{span2:true, required:true})}
+  </div>
+  `;
+}
+
+function renderObjectifs(){
+  const rank1 = state.investisseur1.objectifsRank || {};
+  const rank2 = state.investisseur2.objectifsRank || {};
+  function objList(prefix, ranks){
+    const count = Object.keys(ranks).length;
+    return `<div class="obj-list" data-objlist="${prefix}">` + OBJECTIFS.map((o,i)=>{
+      const r = ranks[i];
+      return `<div class="obj-card ${r?'ranked':''}" data-objcard="${prefix}:${i}">
+        <span class="obj-rank">${r||''}</span>
+        <span class="obj-label">${o}</span>
+      </div>`;
+    }).join('') + `</div><p class="obj-note"><strong>${count} / ${OBJECTIFS.length}</strong> objectifs classés — merci d'en classer au moins ${MIN_OBJECTIFS} par ordre de priorité.</p>`;
+  }
+  return `
+  <div class="section-eyebrow">06 · Priorités</div>
+  <h2 class="section-title">Vos objectifs patrimoniaux</h2>
+  <p class="section-intro">Cliquez sur les objectifs dans l'ordre de priorité pour vous : le premier clic devient votre priorité n°1, le suivant n°2, etc. Cliquez à nouveau sur un objectif classé pour le retirer. Merci d'en classer au moins 3.</p>
+
+  <div class="subsection">
+    <h3>${state.coInvestisseur?"Investisseur 1":"Vos priorités"}</h3>
+    ${objList("investisseur1", rank1)}
+  </div>
+  ${state.coInvestisseur?`<div class="subsection">
+    <h3>Investisseur 2</h3>
+    ${objList("investisseur2", rank2)}
+  </div>`:''}
+
+  <div class="subsection">
+    <h3>Effort d'épargne</h3>
+    <div class="hint">Cette épargne ne doit pas vous mettre en difficulté au quotidien.</div>
+    <div class="grid2">
+      ${field(state,"investisseur1.epargneMensuelle", state.coInvestisseur?"Épargne mensuelle — Investisseur 1 (€/mois)":"Épargne mensuelle envisageable (€/mois)","number",{required:true})}
+      ${state.coInvestisseur?field(state,"investisseur2.epargneMensuelle","Épargne mensuelle — Investisseur 2 (€/mois)","number",{required:true}):''}
+    </div>
+    <div class="grid2">
+      ${field(state,"investisseur1.epargnePrecaution", state.coInvestisseur?"Épargne de précaution souhaitée — Investisseur 1 (€)":"Épargne de précaution souhaitée (€)","number",{required:true})}
+      ${state.coInvestisseur?field(state,"investisseur2.epargnePrecaution","Épargne de précaution souhaitée — Investisseur 2 (€)","number",{required:true}):''}
+    </div>
+    ${field(state,"objectifsPrecisions","Précisions ou autres éléments pouvant impacter cette étude","textarea",{span2:true})}
+  </div>
+  `;
+}
+
+function accordion(id, title, bodyHtml){
+  return `<div class="accordion" id="acc_${id}">
+    <div class="accordion-head" data-accordion="${id}"><span>${title}</span><span class="chev">▾</span></div>
+    <div class="accordion-body"><div class="accordion-body-inner">${bodyHtml}</div></div>
+  </div>`;
+}
+
+function renderConformite(){
+  const inv2 = state.coInvestisseur;
+  function ppeBlock(prefix, title){
+    return `<div class="subsection"><h3>${title}</h3>
+      ${radioGroup(`${prefix}.ppeExpose`,"Êtes-vous une Personne Politiquement Exposée (PPE) ?",["Oui","Non"],true)}
+      ${radioGroup(`${prefix}.ppeLien`,"Avez-vous un lien familial ou êtes-vous étroitement associé à une PPE ?",["Oui","Non"],true)}
+      <div class="grid2">
+        ${field(state,`${prefix}.ppeFonction`,"Quelle fonction a été exercée ?","text")}
+        ${field(state,`${prefix}.ppeDepuis`,"Depuis quelle date","date")}
+      </div>
+      ${radioGroup(`${prefix}.ppeLieu`,"La fonction a été exercée",["En France","À l'étranger"])}
+      <div id="ppeAutrePays_${prefix}" style="${getVal(state,`${prefix}.ppeLieu`)==="À l'étranger"?'':'display:none;'}">
+        ${field(state,`${prefix}.ppeAutrePays`,"Précisez le pays","text")}
+      </div>
+    </div>`;
+  }
+  function fatcaBlock(prefix, title){
+    return `<div class="subsection"><h3>${title}</h3>
+      ${radioGroup(`${prefix}.fatcaCitoyenUSA`,"Êtes-vous citoyen des USA ?",["Oui","Non"],true)}
+      ${radioGroup(`${prefix}.fatcaResidentUSA`,"Êtes-vous résident fiscal des USA ?",["Oui","Non"],true)}
+      ${radioGroup(`${prefix}.fatcaTIN`,"Possédez-vous un n° TIN ?",["Oui","Non"],true)}
+      <p class="obj-note">Si vous répondez "Oui" à l'une de ces questions, un document W-9 (ou W-8BEN si vous n'êtes plus résident fiscal US) vous sera demandé par ailleurs.</p>
+    </div>`;
+  }
+  function crsBlock(prefix, title){
+    return `<div class="subsection"><h3>${title}</h3>
+      ${radioGroup(`${prefix}.crsResidentAutre`,"Êtes-vous résident fiscal d'un pays autre que la France / les USA ?",["Oui","Non"],true)}
+      <div class="grid2" id="crsPaysBlock_${prefix}" style="${getVal(state,`${prefix}.crsResidentAutre`)==="Oui"?'':'display:none;'}">
+        ${field(state,`${prefix}.crsPays`,"Lequel ?","text",{required:true})}
+      </div>
+      ${radioGroup(`${prefix}.crsNumFiscal`,"Possédez-vous le n° fiscal de ce pays ?",["Oui","Non"],true)}
+    </div>`;
+  }
+
+  return `
+  <div class="section-eyebrow">07 · Conformité & signature</div>
+  <h2 class="section-title">Conformité réglementaire</h2>
+
+  ${accordion("ppe","PPE — Personne Politiquement Exposée · en savoir plus", `Votre investisseur est une PPE s'il réside dans un autre État membre de l'Union européenne ou un pays tiers, s'il est exposé à des risques particuliers en raison des fonctions politiques, juridictionnelles ou administratives qu'il exerce ou a exercées dans les 12 derniers mois pour le compte d'un autre État, si des membres directs de sa famille ou des personnes connues pour lui être étroitement associées exercent ou ont exercé ces fonctions dans les 12 derniers mois pour le compte d'un autre État.`)}
+  ${ppeBlock("investisseur1", inv2?"Investisseur 1":"")}
+  ${inv2?ppeBlock("investisseur2","Investisseur 2"):''}
+
+  ${accordion("fatca","FATCA — Foreign Account Tax Compliance Act · en savoir plus", `FATCA est une réglementation américaine visant à lutter contre l'évasion fiscale par des contribuables américains, qui tend à collecter annuellement auprès des institutions financières étrangères les informations concernant les avoirs et revenus enregistrés sur les comptes détenus par les contribuables américains en dehors des États-Unis. Votre investisseur peut être résident aux États-Unis d'Amérique à des fins fiscales notamment dans les cas suivants : il est citoyen américain, il est titulaire d'une carte verte ("green card"), il réside aux États-Unis d'Amérique, ou y a séjourné durant une certaine durée. Auto-certification à remplir par le client : à défaut de réponse ou si vous avez le statut de personne américaine, votre contrat sera reporté à l'administration fiscale française en application de la réglementation américaine FATCA.`)}
+  ${fatcaBlock("investisseur1", inv2?"Investisseur 1":"")}
+  ${inv2?fatcaBlock("investisseur2","Investisseur 2"):''}
+
+  ${accordion("crs","CRS / AEOI — Échange automatique d'informations · en savoir plus", `CRS permet aux administrations fiscales d'avoir la connaissance systématique des avoirs financiers détenus à l'étranger par leurs résidents fiscaux. Cela s'applique à l'ensemble des pays de l'OCDE.`)}
+  ${crsBlock("investisseur1", inv2?"Investisseur 1":"")}
+  ${inv2?crsBlock("investisseur2","Investisseur 2"):''}
+
+  ${accordion("rgpd","Protection des données personnelles (RGPD) · texte intégral", `Conformément à la réglementation en vigueur en matière de protection des données personnelles, les données personnelles du client et/ou prospect sont collectées par les consultants de Metentis Patrimoine qui agissent pour le compte de la société Metentis Patrimoine, responsables de traitement. Ces données sont traitées pour la fourniture des services qu'elles proposent : à des fins de gestion et/ou de suivi de l'exécution du contrat avec le responsable du traitement ; de conformité avec certaines obligations règlementaires relatives à la lutte contre le blanchiment et le financement du terrorisme (L561-5 et suivants CMF), de connaissance client (article 314-44 RG AMF, article L132-27-1 Code des assurances, R519-21 du code monétaire et financier) ; et d'agrégation des bases de données clients communes au groupe de sociétés. Metentis Patrimoine s'engage à supprimer les données personnelles des prospects trois ans après la date de la signature de ce document. Metentis Patrimoine s'engage à supprimer les données cinq ans après la cessation de la relation entre les responsables de traitement et le client. Metentis Patrimoine s'engage à supprimer les données personnelles cinq ans après la fin de l'engagement de location prévu par le dispositif fiscal en vigueur. Le client bénéficie d'un droit d'accès, de rectification, d'effacement ou de portabilité des données ainsi que d'un droit de limitation ou d'opposition au traitement de ses données personnelles qu'il peut exercer à l'adresse suivante : thibaud.sarron@metentis-patrimoine.com. Le Client et/ou le prospect peut introduire une réclamation au sujet du traitement de ses données personnelles. Les données recueillies pourront être transmises à des tiers (assureurs, sociétés de gestion, promoteurs immobiliers, etc.) en vue de l'accomplissement des diligences nécessaires au traitement des souscriptions et/ou commandes immobilières et/ou de la gestion de la relation. Le client accepte de libérer par les présentes la société Metentis Patrimoine de son obligation de respect du secret professionnel, l'autorise à transmettre les données à toute société exploitant un agrégateur de données. Le consentement susvisé est volontaire et peut être radié ou annulé à tout moment. Le client reconnaît qu'une modification de sa situation peut avoir une incidence sur le service d'investissement ou le conseil fourni. Aussi, doivent être signalées à Metentis Patrimoine, toutes les modifications nécessaires. Si le client ne communique pas les informations requises, le consultant ne pourra pas poursuivre sa mission et devra s'abstenir de recommander les opérations, instruments de services. Au regard de la règlementation FATCA, le client certifie sur l'honneur l'exactitude des réponses apportées ci-dessus et s'engage à informer sans délai l'assureur de tout changement de circonstances pouvant modifier son statut et à fournir une nouvelle auto certification sur le formulaire approprié accompagné des justificatifs éventuels dans les 30 jours suivant ce changement.`)}
+
+  <div class="subsection">
+    <h3>Signature</h3>
+    <p class="section-intro">En signant ce document, vous certifiez sur l'honneur l'exactitude des réponses apportées et vous engagez à informer sans délai Metentis Patrimoine de tout changement de circonstances pouvant modifier votre statut, dans les 30 jours suivant ce changement.</p>
+    <div class="attest-box">
+      <label class="check-opt">
+        <input type="checkbox" id="signatureConsent" data-path="investisseur1.signatureConsent">
+        Je certifie sur l'honneur l'exactitude des informations transmises dans ce formulaire, je reconnais avoir pris connaissance des informations relatives au traitement de mes données personnelles (RGPD), à la réglementation PPE, FATCA et CRS/AEOI décrites ci-dessus, et j'y consens.
+      </label>
+      <div class="grid2" style="margin-top:16px;">
+        ${field(state,"investisseur1.signatureNom","Nom tapé en signature",'text',{required:true})}
+        ${field(state,"investisseur1.signatureDate","Date","date",{required:true})}
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+/* ============ RENDER / NAV ============ */
+function renderSteps(scrollTop){
+  if(scrollTop===undefined) scrollTop = true;
+  document.getElementById("stepsNav").innerHTML = STEPS.map((s,i)=>
+    `<button type="button" class="step-pill ${i===currentStep?'active':i<currentStep?'done':''}" data-goto="${i}">${i+1}. ${s.short}</button>`
+  ).join('');
+  document.getElementById("progressFill").style.width = `${((currentStep+1)/STEPS.length)*100}%`;
+  document.getElementById("progressLabel").textContent = `Étape ${currentStep+1} sur ${STEPS.length} — ${STEPS[currentStep].title}`;
+
+  const step = STEPS[currentStep];
+  const isLast = currentStep===STEPS.length-1;
+  document.getElementById("stepsContainer").innerHTML = `
+    <div class="card">
+      ${step.render()}
+      <div class="step-actions">
+        <button type="button" class="btn btn-ghost" id="prevBtn" ${currentStep===0?'disabled':''}>← Précédent</button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          ${isLast?`<button type="button" class="btn btn-ghost" id="pdfDraftBtn">Télécharger mes réponses en PDF</button>`:''}
+          ${isLast?
+            `<button type="submit" class="btn btn-primary" id="submitBtn">Envoyer mon dossier</button>`:
+            `<button type="button" class="btn btn-primary" id="nextBtn">Suivant →</button>`}
+        </div>
+      </div>
+    </div>`;
+  bindStepEvents();
+  if(scrollTop) window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function bindStepEvents(){
+  document.querySelectorAll("[data-goto]").forEach(el=>{
+    el.addEventListener("click",()=>{ currentStep = parseInt(el.dataset.goto); renderSteps(); });
+  });
+  document.getElementById("prevBtn")?.addEventListener("click",()=>{ currentStep--; renderSteps(); });
+  document.getElementById("nextBtn")?.addEventListener("click",()=>{
+    if(validateStep(currentStep)){ currentStep++; renderSteps(); }
+  });
+
+  // generic inputs
+  document.querySelectorAll("[data-path]").forEach(el=>{
+    const evt = (el.type==="checkbox") ? "change" : "input";
+    el.addEventListener(evt, ()=>{
+      const v = el.type==="checkbox" ? el.checked : el.value;
+      setVal(state, el.dataset.path, v);
+      handleReactiveFields(el.dataset.path);
+    });
+  });
+
+  // radio groups (data-path on radio inputs with name=path)
+  document.querySelectorAll("input[type=radio][data-path]").forEach(el=>{
+    el.addEventListener("change", ()=>{
+      setVal(state, el.dataset.path, el.value);
+      handleReactiveFields(el.dataset.path);
+    });
+  });
+
+  // add row
+  document.querySelectorAll("[data-addrow]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const key = el.dataset.addrow;
+      if(key==="revenus"){ state.revenus.push({nature:"",montant:"",detenteur:""}); }
+      else { state[key].push(blankRowFor(key)); }
+      renderSteps(false);
+    });
+  });
+  // remove row
+  document.querySelectorAll("[data-remove]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const [key, idx] = el.dataset.remove.split(":");
+      state[key].splice(parseInt(idx),1);
+      renderSteps(false);
+    });
+  });
+  // owner chips
+  document.querySelectorAll("[data-owner]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      setVal(state, el.dataset.owner, el.dataset.value);
+      renderSteps(false);
+    });
+  });
+  // co-investisseur toggle
+  document.getElementById("coInvestisseurToggle")?.addEventListener("change",(e)=>{
+    state.coInvestisseur = e.target.checked;
+    renderSteps(false);
+  });
+  // accordions
+  document.querySelectorAll("[data-accordion]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      document.getElementById(`acc_${el.dataset.accordion}`).classList.toggle("open");
+    });
+  });
+  // objective cards
+  document.querySelectorAll("[data-objcard]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const [prefix, idxStr] = el.dataset.objcard.split(":");
+      const idx = parseInt(idxStr);
+      const ranks = state[prefix].objectifsRank;
+      if(ranks[idx]){
+        const removedRank = ranks[idx];
+        delete ranks[idx];
+        Object.keys(ranks).forEach(k=>{ if(ranks[k] > removedRank) ranks[k]--; });
+      } else {
+        const used = Object.values(ranks);
+        const next = used.length ? Math.max(...used)+1 : 1;
+        ranks[idx] = next;
+      }
+      renderSteps(false);
+    });
+  });
+  document.getElementById("pdfDraftBtn")?.addEventListener("click", generatePDF);
+}
+
+function blankRowFor(key){
+  const schema = SCHEMAS[key];
+  const row = {};
+  schema.fields.forEach(f=>{ row[f.k] = f.type==="checkbox" ? false : ""; });
+  return row;
+}
+
+function handleReactiveFields(path){
+  // re-render (without scrolling) only when a field affects conditional visibility
+  const reactive = ["logement","situationFamille","envisageMariage","ppeLieu","tmiConnu","crsResidentAutre"];
+  const isReactive = reactive.some(r=>path.includes(r)) || /^placements\[\d+\]\.type$/.test(path);
+  if(isReactive) renderSteps(false);
+}
+
+/* ============ VALIDATION ============ */
+function validateStep(i){
+  const errors = [];
+
+  if(i===0){
+    const req = ["investisseur1.nom","investisseur1.prenom","investisseur1.dateNaissance","investisseur1.mobile","investisseur1.email"];
+    req.forEach(p=>{ if(!getVal(state,p)) errors.push("les champs d'identité obligatoires de l'investisseur 1 (nom, prénom, date de naissance, mobile, email)"); });
+    if(state.coInvestisseur){
+      const req2 = ["investisseur2.nom","investisseur2.prenom","investisseur2.dateNaissance","investisseur2.mobile","investisseur2.email"];
+      req2.forEach(p=>{ if(!getVal(state,p)) errors.push("les champs d'identité obligatoires de l'investisseur 2 (nom, prénom, date de naissance, mobile, email)"); });
+    }
+  }
+
+  if(i===1){
+    if(!getVal(state,"investisseur1.situationFamille")) errors.push("la situation de famille (investisseur 1)");
+    if(getVal(state,"investisseur1.situationFamille")==="Marié(e)" && !getVal(state,"investisseur1.regimeMatrimonial")) errors.push("le régime matrimonial (investisseur 1)");
+    if(state.coInvestisseur){
+      if(!getVal(state,"investisseur2.situationFamille")) errors.push("la situation de famille (investisseur 2)");
+      if(getVal(state,"investisseur2.situationFamille")==="Marié(e)" && !getVal(state,"investisseur2.regimeMatrimonial")) errors.push("le régime matrimonial (investisseur 2)");
+    }
+  }
+
+  if(i===2){
+    const checkPro = (prefix,label)=>{
+      if(!getVal(state,`${prefix}.statutPro`)) errors.push(`le statut professionnel (${label})`);
+      if(!getVal(state,`${prefix}.libelleProfession`)) errors.push(`le libellé de profession (${label})`);
+      if(!getVal(state,`${prefix}.proDepuis`)) errors.push(`la date de début d'activité (${label})`);
+      if(!getVal(state,`${prefix}.evolutionPro`)) errors.push(`la réponse sur l'évolution professionnelle (${label})`);
+    };
+    checkPro("investisseur1","investisseur 1");
+    if(state.coInvestisseur) checkPro("investisseur2","investisseur 2");
+    if(!state.revenus || state.revenus.length===0 || state.revenus.some(r=>!r.nature || !r.montant || !r.detenteur)){
+      errors.push("le détail des revenus (au moins une ligne complète : nature, montant, détenteur)");
+    }
+    if(getVal(state,"investisseur1.tmiConnu")==="Oui" && !getVal(state,"investisseur1.tmiValeur")){
+      errors.push("votre tranche marginale d'imposition (TMI)");
+    }
+  }
+
+  if(i===4){
+    if(!getVal(state,"placementsSatisfaction")) errors.push("la note de satisfaction sur vos placements actuels");
+    if(!getVal(state,"placementsInadaptes")) errors.push("la réponse sur les placements inadaptés");
+    if(!getVal(state,"autresProjetsAchat")) errors.push("la réponse sur vos autres projets d'achats");
+  }
+
+  if(i===5){
+    if(Object.keys(state.investisseur1.objectifsRank||{}).length < MIN_OBJECTIFS) errors.push(`au moins ${MIN_OBJECTIFS} objectifs classés par ordre de priorité (investisseur 1)`);
+    if(!getVal(state,"investisseur1.epargneMensuelle")) errors.push("l'épargne mensuelle envisageable (investisseur 1)");
+    if(!getVal(state,"investisseur1.epargnePrecaution")) errors.push("l'épargne de précaution souhaitée (investisseur 1)");
+    if(state.coInvestisseur){
+      if(Object.keys(state.investisseur2.objectifsRank||{}).length < MIN_OBJECTIFS) errors.push(`au moins ${MIN_OBJECTIFS} objectifs classés par ordre de priorité (investisseur 2)`);
+      if(!getVal(state,"investisseur2.epargneMensuelle")) errors.push("l'épargne mensuelle envisageable (investisseur 2)");
+      if(!getVal(state,"investisseur2.epargnePrecaution")) errors.push("l'épargne de précaution souhaitée (investisseur 2)");
+    }
+  }
+
+  if(i===6){
+    const checkPPE = (prefix,label)=>{
+      if(!getVal(state,`${prefix}.ppeExpose`)) errors.push(`la question PPE — êtes-vous exposé ${label}`);
+      if(!getVal(state,`${prefix}.ppeLien`)) errors.push(`la question PPE — lien avec une PPE ${label}`);
+      const needsDetail = getVal(state,`${prefix}.ppeExpose`)==="Oui" || getVal(state,`${prefix}.ppeLien`)==="Oui";
+      if(needsDetail){
+        if(!getVal(state,`${prefix}.ppeFonction`)) errors.push(`la fonction exercée (PPE) ${label}`);
+        if(!getVal(state,`${prefix}.ppeLieu`)) errors.push(`le lieu d'exercice de la fonction (PPE) ${label}`);
+      }
+    };
+    const checkFATCA = (prefix,label)=>{
+      if(!getVal(state,`${prefix}.fatcaCitoyenUSA`)) errors.push(`FATCA — citoyen USA ${label}`);
+      if(!getVal(state,`${prefix}.fatcaResidentUSA`)) errors.push(`FATCA — résident fiscal USA ${label}`);
+      if(!getVal(state,`${prefix}.fatcaTIN`)) errors.push(`FATCA — n° TIN ${label}`);
+    };
+    const checkCRS = (prefix,label)=>{
+      if(!getVal(state,`${prefix}.crsResidentAutre`)) errors.push(`CRS — résident fiscal d'un autre pays ${label}`);
+      if(getVal(state,`${prefix}.crsResidentAutre`)==="Oui" && !getVal(state,`${prefix}.crsPays`)) errors.push(`CRS — pays de résidence fiscale ${label}`);
+      if(!getVal(state,`${prefix}.crsNumFiscal`)) errors.push(`CRS — n° fiscal ${label}`);
+    };
+    const l1 = state.coInvestisseur ? "(investisseur 1)" : "";
+    checkPPE("investisseur1", l1); checkFATCA("investisseur1", l1); checkCRS("investisseur1", l1);
+    if(state.coInvestisseur){
+      checkPPE("investisseur2","(investisseur 2)"); checkFATCA("investisseur2","(investisseur 2)"); checkCRS("investisseur2","(investisseur 2)");
+    }
+    if(!state.investisseur1.signatureConsent || !state.investisseur1.signatureNom || !state.investisseur1.signatureDate){
+      errors.push("la case d'attestation, votre nom et la date de signature");
+    }
+  }
+
+  if(errors.length){
+    alert("Merci de compléter les éléments suivants avant de continuer :\n\n- " + errors.join("\n- "));
+    return false;
+  }
+  return true;
+}
+
+/* ============ PDF GENERATION ============ */
+function generatePDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"pt", format:"a4"});
+  const green = [26,58,46]; const gold=[200,169,110];
+  let y = 0;
+
+  function coverPage(){
+    doc.setFillColor(...green); doc.rect(0,0,595,180,'F');
+    doc.setTextColor(255,255,255); doc.setFont("times","bold"); doc.setFontSize(22);
+    doc.text("Metentis Patrimoine", 40, 70);
+    doc.setFontSize(15); doc.setFont("helvetica","normal");
+    doc.text("Recueil d'informations & objectifs patrimoniaux", 40, 100);
+    doc.setFontSize(10); doc.setTextColor(220,230,224);
+    doc.text(`Document généré le ${new Date().toLocaleDateString('fr-FR')}`, 40, 130);
+    doc.setTextColor(0,0,0);
+    y = 220;
+  }
+  function h(title){
+    if(y>750){ doc.addPage(); y=50; }
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(...green);
+    doc.text(title, 40, y); y+=8;
+    doc.setDrawColor(...gold); doc.setLineWidth(1); doc.line(40,y,555,y); y+=18;
+    doc.setTextColor(0,0,0); doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  }
+  function qa(question, answer){
+    if(y>770){ doc.addPage(); y=50; }
+    doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(120,120,120);
+    const qLines = doc.splitTextToSize(String(question), 515);
+    doc.text(qLines, 40, y);
+    y += qLines.length*10.5 + 3;
+    doc.setFont("helvetica","normal"); doc.setFontSize(10.5); doc.setTextColor(20,20,20);
+    const isEmpty = answer===undefined || answer===null || answer==="" || answer===false;
+    const ans = isEmpty ? "Non renseigné" : (answer===true ? "Oui" : String(answer));
+    const aLines = doc.splitTextToSize(ans, 515);
+    if(y + aLines.length*13 > 800){ doc.addPage(); y=50; }
+    doc.text(aLines, 40, y);
+    y += aLines.length*13 + 9;
+  }
+  function table(head, rows){
+    if(rows.length===0) return;
+    doc.autoTable({
+      startY:y, head:[head], body:rows, margin:{left:40,right:40, bottom:45},
+      styles:{fontSize:7.5, cellPadding:4}, headStyles:{fillColor:green, textColor:255},
+      theme:'striped'
+    });
+    y = doc.lastAutoTable.finalY + 20;
+  }
+
+  coverPage();
+
+  function investorSection(prefix, label){
+    const s = state[prefix];
+    h(`${label} — Identité & coordonnées`);
+    qa("Civilité, nom et prénom", `${s.civilite||''} ${s.nom||''} ${s.prenom||''}`.trim());
+    qa("Nom de naissance", s.nomNaissance);
+    qa("Né(e) le", s.dateNaissance);
+    qa("Lieu de naissance", s.lieuNaissance);
+    qa("Nationalité", s.nationalite);
+    qa("Mobile", s.mobile);
+    qa("Email", s.email);
+    qa("Adresse", `${s.adresseNum||''}, ${s.adresseCP||''} ${s.adresseVille||''}, ${s.adressePays||''}`.trim());
+    qa("Vous êtes (logement)", s.logement);
+    if(s.logement && s.logement!=="Propriétaire"){
+      qa("Projet d'achat de résidence principale ?", s.projetAchatRP);
+      qa("Souhaitez-vous un accompagnement pour le financement ?", s.projetAccompagnement);
+      qa("Description du projet (montant, lieu, type, apport, travaux…)", s.projetDescription);
+    }
+
+    h(`${label} — Situation de famille`);
+    qa("Situation de famille", s.situationFamille);
+    qa("Depuis le", s.situationFamilleDepuis);
+    if(s.situationFamille==="Marié(e)"){
+      qa("Régime matrimonial", `${s.regimeMatrimonial||''} ${s.regimeMatrimonialPrecision||''}`.trim());
+    }
+    qa("Envisagez-vous de vous marier / pacser ?", s.envisageMariage);
+    if(s.envisageMariage==="Oui") qa("Date envisagée", s.envisageMariageDate);
+
+    h(`${label} — Profession`);
+    qa("Statut professionnel", s.statutPro);
+    qa("Libellé de la profession", s.libelleProfession);
+    qa("Depuis quelle date", s.proDepuis);
+    qa("Évolution professionnelle envisagée à court/moyen terme", s.evolutionPro);
+
+    h(`${label} — Situation fiscale (facultatif)`);
+    qa("Connaissez-vous votre TMI ?", s.tmiConnu);
+    if(s.tmiConnu==="Oui") qa("Votre TMI", s.tmiValeur);
+    qa("Changement de vie impactant la fiscalité", s.changementFiscal);
+
+    h(`${label} — Vision de l'avenir`);
+    qa("Âge et modalités de retraite envisagés", s.retraiteAge);
+    qa("Revenu mensuel souhaité à la retraite", s.retraiteRevenusSouhaites?`${s.retraiteRevenusSouhaites} €/mois`:'');
+    qa("Pension de retraite estimée (système par répartition)", s.retraitePensionEstimee?`${s.retraitePensionEstimee} €/mois`:'');
+    qa("Transmission de patrimoine anticipée ?", s.transmissionAnticipee);
+    qa("Détail / accompagnement souhaité pour la transmission", s.transmissionDetail);
+
+    h(`${label} — Objectifs patrimoniaux prioritaires`);
+    const ranked = Object.entries(s.objectifsRank||{}).sort((a,b)=>a[1]-b[1]).map(([idx])=>OBJECTIFS[idx]);
+    if(ranked.length===0) qa("Objectifs classés", "");
+    ranked.forEach((o,i)=>qa(`Priorité n°${i+1}`, o));
+    qa("Épargne mensuelle envisageable", s.epargneMensuelle?`${s.epargneMensuelle} €/mois`:'');
+    qa("Épargne de précaution souhaitée", s.epargnePrecaution?`${s.epargnePrecaution} €`:'');
+
+    h(`${label} — Conformité réglementaire`);
+    qa("Personne Politiquement Exposée (PPE) ?", s.ppeExpose);
+    qa("Lien familial / association étroite avec une PPE ?", s.ppeLien);
+    qa("Fonction exercée", s.ppeFonction);
+    qa("Fonction exercée en France ou à l'étranger", s.ppeLieu==="À l'étranger" ? `À l'étranger${s.ppeAutrePays?` (${s.ppeAutrePays})`:''}` : s.ppeLieu);
+    qa("Depuis quelle date (PPE)", s.ppeDepuis);
+    qa("Citoyen des USA ?", s.fatcaCitoyenUSA);
+    qa("Résident fiscal des USA ?", s.fatcaResidentUSA);
+    qa("Possédez-vous un n° TIN ?", s.fatcaTIN);
+    qa("Résident fiscal d'un pays autre que la France / les USA ?", s.crsResidentAutre);
+    if(s.crsResidentAutre==="Oui") qa("Lequel ?", s.crsPays);
+    qa("Possédez-vous le n° fiscal de ce pays ?", s.crsNumFiscal);
+  }
+
+  investorSection("investisseur1", "Investisseur 1");
+  if(state.coInvestisseur) investorSection("investisseur2", "Investisseur 2");
+
+  h("Protection du conjoint et de la famille");
+  qa("Souhaitez-vous que l'on réfléchisse à une solution de protection ? Situation particulière ?", state.protectionConjoint);
+
+  h("Enfants");
+  table(["Nom","Prénom","Naissance","À charge","Commun","Garde alt.","Inv.1","Inv.2"],
+    state.enfants.map(e=>[e.nom,e.prenom,e.dateNaissance,e.aCharge?"Oui":"Non",e.commun?"Oui":"Non",e.gardeAlternee?"Oui":"Non",e.invest1?"Oui":"Non",e.invest2?"Oui":"Non"]));
+  if(state.enfants.length===0) qa("Enfants renseignés", "");
+
+  h("Revenus annuels");
+  table(["Nature","Montant annuel (€)","Détenteur"], (state.revenus||[]).map(r=>[r.nature,r.montant,r.detenteur]));
+  if(!state.revenus || state.revenus.length===0) qa("Détail des revenus", "");
+
+  h("Placements financiers");
+  table(["Type","Établissement","Souscription","Valeur (€)","Vers. annuel (€)","Propriété"],
+    state.placements.map(p=>[p.type==="Autre"?`Autre : ${p.typeAutre||''}`:p.type, p.etablissement,p.dateSouscription,p.valeurActuelle,p.versementAnnuel,p.propriete]));
+  if(state.placements.length===0) qa("Placements renseignés", "");
+
+  h("Immobilier");
+  table(["Type","Ville","RP/Sec/Locatif","Location","Valeur actuelle (€)","Loyer net (€)","Propriété"],
+    state.immobilier.map(i=>[i.type,i.ville,i.rpSecondaire,i.locationType,i.valeurActuelle,i.loyerNet,i.propriete]));
+  if(state.immobilier.length===0) qa("Biens immobiliers renseignés", "");
+
+  h("Patrimoine professionnel / autres actifs");
+  table(["Libellé","Valeur actuelle (€)","Propriété"], state.patrimoinePro.map(p=>[p.libelle,p.valeurActuelle,p.propriete]));
+  if(state.patrimoinePro.length===0) qa("Autres actifs renseignés", "");
+
+  h("Charges");
+  table(["Libellé","Par mois (€)","Propriété"], state.charges.map(c=>[c.libelle,c.parMois,c.propriete]));
+  if(state.charges.length===0) qa("Charges renseignées", "");
+
+  h("Crédits");
+  table(["Type","Prêteur","Taux (%)","Montant (€)","CRD (€)","Mensualité (€)","Propriété"],
+    state.credits.map(c=>[c.type,c.etablissementPreteur,c.tauxNominal,c.montantCredit,c.capitalRestantDu,c.mensualites,c.propriete]));
+  if(state.credits.length===0) qa("Crédits renseignés", "");
+
+  h("Satisfaction & projets patrimoniaux");
+  qa("Note de satisfaction sur les placements actuels (1 à 10)", state.placementsSatisfaction);
+  qa("Montant envisagé pour une réorganisation", state.reorganisationMontant?`${state.reorganisationMontant} €`:'');
+  qa("Placements jugés inadaptés et pourquoi", state.placementsInadaptes);
+  qa("Autres projets d'achats à venir", state.autresProjetsAchat);
+  qa("Précisions sur les objectifs", state.objectifsPrecisions);
+
+  h("Signature & attestation");
+  qa("Signé par", state.investisseur1.signatureNom);
+  qa("Date de signature", state.investisseur1.signatureDate);
+  qa("Consentement RGPD / PPE / FATCA / CRS", state.investisseur1.signatureConsent ? "Case cochée — accepté" : "Non renseigné");
+
+  // Annexe RGPD — texte intégral, reproduit en entier (non replié)
+  doc.addPage(); y=50;
+  h("Annexe — Protection des données personnelles (RGPD)");
+  doc.setFont("helvetica","normal"); doc.setFontSize(8.3); doc.setTextColor(40,40,40);
+  const rgpdText = "Conformément à la réglementation en vigueur en matière de protection des données personnelles, les données personnelles du client et/ou prospect sont collectées par les consultants de Metentis Patrimoine qui agissent pour le compte de la société Metentis Patrimoine, responsables de traitement. Ces données sont traitées pour la fourniture des services qu'elles proposent : à des fins de gestion et/ou de suivi de l'exécution du contrat avec le responsable du traitement ; de conformité avec certaines obligations règlementaires relatives à la lutte contre le blanchiment et le financement du terrorisme (L561-5 et suivants CMF), de connaissance client (article 314-44 RG AMF, article L132-27-1 Code des assurances, R519-21 du code monétaire et financier) ; et d'agrégation des bases de données clients communes au groupe de sociétés. Metentis Patrimoine s'engage à supprimer les données personnelles des prospects trois ans après la date de la signature de ce document. Metentis Patrimoine s'engage à supprimer les données cinq ans après la cessation de la relation entre les responsables de traitement et le client. Metentis Patrimoine s'engage à supprimer les données personnelles cinq ans après la fin de l'engagement de location prévu par le dispositif fiscal en vigueur. Le client bénéficie d'un droit d'accès, de rectification, d'effacement ou de portabilité des données ainsi que d'un droit de limitation ou d'opposition au traitement de ses données personnelles qu'il peut exercer à l'adresse suivante : thibaud.sarron@metentis-patrimoine.com. Le Client et/ou le prospect peut introduire une réclamation au sujet du traitement de ses données personnelles. Les données recueillies pourront être transmises à des tiers (assureurs, sociétés de gestion, promoteurs immobiliers, etc.) en vue de l'accomplissement des diligences nécessaires au traitement des souscriptions et/ou commandes immobilières et/ou de la gestion de la relation. Le client accepte de libérer par les présentes la société Metentis Patrimoine de son obligation de respect du secret professionnel, l'autorise à transmettre les données à toute société exploitant un agrégateur de données. Le consentement susvisé est volontaire et peut être radié ou annulé à tout moment. Le client reconnaît qu'une modification de sa situation peut avoir une incidence sur le service d'investissement ou le conseil fourni. Aussi, doivent être signalées à Metentis Patrimoine, toutes les modifications nécessaires. Si le client ne communique pas les informations requises, le consultant ne pourra pas poursuivre sa mission et devra s'abstenir de recommander les opérations, instruments de services. Au regard de la règlementation FATCA, le client certifie sur l'honneur l'exactitude des réponses apportées ci-dessus et s'engage à informer sans délai l'assureur de tout changement de circonstances pouvant modifier son statut et à fournir une nouvelle auto certification sur le formulaire approprié accompagné des justificatifs éventuels dans les 30 jours suivant ce changement.";
+  const rgpdLines = doc.splitTextToSize(rgpdText, 515);
+  rgpdLines.forEach(line=>{
+    if(y>800){ doc.addPage(); y=50; doc.setFont("helvetica","normal"); doc.setFontSize(8.3); doc.setTextColor(40,40,40); }
+    doc.text(line, 40, y); y+=11.5;
+  });
+
+  addLegalFooter(doc);
+  doc.save(`Metentis_KYC_${(state.investisseur1.nom||'client')}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+function addLegalFooter(doc){
+  const totalPages = doc.internal.getNumberOfPages();
+  const legal = "METENTIS PATRIMOINE - 6 Rue Pouchet, 75017 PARIS - SIREN : 983 642 497   |   Conseiller en Investissements Financiers (CIF), Mandataire d'intermédiaire d'assurance (MIA) & Mandataire d'intermédiaire en Opérations de Banque et en Services de Paiement (MIOBSP) - Immatriculé à l'ORIAS sous le n°24001368 - www.orias.fr   |   Adhérent de l'ANACOFI-CIF, association agréée par l'AMF - R.C. Professionnelle MMA IARD Assurances n° 127 128 662";
+  for(let p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    doc.setDrawColor(220,220,220); doc.setLineWidth(0.5); doc.line(40,812,555,812);
+    doc.setFont("helvetica","normal"); doc.setFontSize(6.2); doc.setTextColor(120,120,120);
+    const lines = doc.splitTextToSize(legal, 480);
+    let fy = 821;
+    lines.forEach(l=>{ doc.text(l, 40, fy); fy+=7.5; });
+    doc.setFontSize(7);
+    doc.text(`${p} / ${totalPages}`, 555, 821, {align:"right"});
+    doc.setTextColor(0,0,0);
+  }
+}
+
+/* ============ URL STATE RESTORE ============ */
+function encodeStateToURL(){
+  const json = JSON.stringify(state);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  return `${window.location.origin}${window.location.pathname}?data=${b64}`;
+}
+function restoreStateFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  const data = params.get("data");
+  if(!data) return false;
+  try{
+    const json = decodeURIComponent(escape(atob(data)));
+    const restored = JSON.parse(json);
+    Object.assign(state, restored);
+    return true;
+  }catch(e){ console.error("Impossible de restaurer les données", e); return false; }
+}
+
+/* ============ SUBMIT ============ */
+document.getElementById("kycForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  if(!validateStep(STEPS.length-1)) return;
+
+  const submitBtn = document.getElementById("submitBtn");
+  submitBtn.disabled = true; submitBtn.textContent = "Envoi en cours…";
+
+  const restoreLink = encodeStateToURL();
+  const payload = {
+    _subject: `Nouveau recueil KYC — ${state.investisseur1.nom || ''} ${state.investisseur1.prenom || ''}`,
+    investisseur1_nom: state.investisseur1.nom,
+    investisseur1_prenom: state.investisseur1.prenom,
+    investisseur1_email: state.investisseur1.email,
+    coInvestisseur: state.coInvestisseur ? "Oui" : "Non",
+    lien_restauration_donnees: restoreLink,
+    donnees_completes_json: JSON.stringify(state)
+  };
+
+  try{
+    const resp = await fetch(FORMSPREE_ENDPOINT, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "Accept":"application/json" },
+      body: JSON.stringify(payload)
+    });
+    if(!resp.ok) throw new Error("Erreur d'envoi");
+    document.getElementById("kycForm").style.display = "none";
+    document.getElementById("stepsNav").style.display = "none";
+    document.getElementById("successScreen").style.display = "block";
+  }catch(err){
+    alert("Une erreur est survenue lors de l'envoi. Merci de réessayer, ou de contacter directement Thibaud Sarron.");
+    submitBtn.disabled = false; submitBtn.textContent = "Envoyer mon dossier";
+  }
+});
+
+document.getElementById("dlPdfBtn").addEventListener("click", generatePDF);
+
+/* ============ INIT ============ */
+restoreStateFromURL();
+renderSteps();
+</script>
+</body>
+</html>
