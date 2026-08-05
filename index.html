@@ -195,6 +195,15 @@ footer a{color:var(--dark-green); text-decoration:underline;}
 .req::after{content:" *"; color:var(--error);}
 .error-msg{color:var(--error); font-size:12.5px; margin-top:4px; display:none;}
 .field.invalid input, .field.invalid select{border-color:var(--error);}
+
+.field-disabled{opacity:.45;}
+.field-disabled input, .field-disabled select, .field-disabled textarea{background:#ececec; cursor:not-allowed;}
+
+.addr-suggestions{position:absolute; top:100%; left:0; right:0; background:var(--white); border:1px solid var(--line); border-top:none; max-height:220px; overflow-y:auto; z-index:50; box-shadow:var(--shadow); border-radius:0 0 var(--radius) var(--radius); display:none;}
+.addr-suggestions.show{display:block;}
+.addr-suggestion-item{padding:9px 12px; font-size:13.5px; cursor:pointer; border-bottom:1px solid var(--line);}
+.addr-suggestion-item:last-child{border-bottom:none;}
+.addr-suggestion-item:hover{background:var(--cream);}
 .field.invalid .error-msg{display:block;}
 
 @media print{ .app-header, .steps-nav, .step-actions, footer{display:none;} }
@@ -298,8 +307,8 @@ function emptyInvestisseur(){
     epargneMensuelle:"", epargnePrecaution:"",
     objectifsRank:{},
     ppeExpose:"", ppeLien:"", ppeFonction:"", ppeLieu:"", ppeAutrePays:"", ppeDepuis:"",
-    fatcaCitoyenUSA:"", fatcaResidentUSA:"", fatcaTIN:"",
-    crsResidentAutre:"", crsPays:"", crsNumFiscal:"",
+    fatcaCitoyenUSA:"", fatcaResidentUSA:"", fatcaTIN:"", fatcaTINNumero:"",
+    crsResidentAutre:"", crsPays:"", crsNumFiscal:"", crsNumFiscalNumero:"",
     signatureNom:"", signatureDate:"", signatureConsent:false
   };
 }
@@ -355,9 +364,9 @@ const SCHEMAS = {
       {k:"valeurAcquisition", label:"Valeur d'acquisition (€)", type:"number"},
       {k:"valeurActuelle", label:"Valeur actuelle (€)", type:"number"},
       {k:"rpSecondaire", label:"RP / Secondaire / Locatif", type:"select", options:["Résidence principale","Résidence secondaire","Investissement locatif"]},
-      {k:"locationType", label:"Location nue / meublée", type:"select", options:["Non loué","Location nue","Location meublée"]},
-      {k:"loyerBrut", label:"Loyer brut annuel (€)", type:"number"},
-      {k:"loyerNet", label:"Loyer net annuel (€)", type:"number"},
+      {k:"locationType", label:"Location nue / meublée", type:"select", options:["Non loué","Location nue","Location meublée"], disableIf:(item)=>item.rpSecondaire==="Résidence principale"},
+      {k:"loyerBrut", label:"Loyer brut annuel (€)", type:"number", disableIf:(item)=>item.rpSecondaire==="Résidence principale"},
+      {k:"loyerNet", label:"Loyer net annuel (€)", type:"number", disableIf:(item)=>item.rpSecondaire==="Résidence principale"},
       {k:"demembrement", label:"Démembrement ?", type:"text"},
       {k:"particulariteSCI", label:"Particularités (détention SCI IS/IR)", type:"text", span:2},
       {k:"propriete", label:"Propriété", type:"owner"}
@@ -414,27 +423,29 @@ function field(obj, path, label, type, opts){
   opts = opts || {};
   const id = path.replace(/[.\[\]]/g,'_');
   const val = getVal(obj, path);
+  const dis = opts.disabled ? 'disabled' : '';
   let inner = "";
   if(type==="text"||type==="number"||type==="date"||type==="email"||type==="tel"){
-    inner = `<input type="${type}" id="${id}" data-path="${path}" value="${val ? escapeHtml(val):''}" ${opts.required?'':''}>`;
+    inner = `<input type="${type}" id="${id}" data-path="${path}" value="${val ? escapeHtml(val):''}" ${dis}>`;
   } else if(type==="textarea"){
-    inner = `<textarea id="${id}" data-path="${path}">${val?escapeHtml(val):''}</textarea>`;
+    inner = `<textarea id="${id}" data-path="${path}" ${dis}>${val?escapeHtml(val):''}</textarea>`;
   } else if(type==="select"){
-    inner = `<select id="${id}" data-path="${path}"><option value="">— Sélectionner —</option>` +
+    inner = `<select id="${id}" data-path="${path}" ${dis}><option value="">— Sélectionner —</option>` +
       opts.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('') + `</select>`;
   }
-  return `<div class="field ${opts.span2?'span-2':''}" ${opts.style?`style="${opts.style}"`:''}>
+  return `<div class="field ${opts.span2?'span-2':''} ${opts.disabled?'field-disabled':''}" ${opts.style?`style="${opts.style}"`:''}>
     <label ${opts.required?'class="req"':''} for="${id}">${label}</label>
     ${inner}
   </div>`;
 }
 
-function radioGroup(path, label, options, required){
+function radioGroup(path, label, options, required, disabled){
   const val = getVal(state, path);
-  return `<div class="field">
+  const dis = disabled ? 'disabled' : '';
+  return `<div class="field ${disabled?'field-disabled':''}">
     <label ${required?'class="req"':''}>${label}</label>
     <div class="radio-row">
-      ${options.map(o=>`<label class="radio-opt"><input type="radio" name="${path}" data-path="${path}" value="${o}" ${val===o?'checked':''}> ${o}</label>`).join('')}
+      ${options.map(o=>`<label class="radio-opt"><input type="radio" name="${path}" data-path="${path}" value="${o}" ${val===o?'checked':''} ${dis}> ${o}</label>`).join('')}
     </div>
   </div>`;
 }
@@ -471,11 +482,14 @@ function renderRepeatable(listKey, ownerAware){
     schema.fields.forEach(f=>{
       if(f.investorOnly && !state.coInvestisseur) return;
       if(f.showIf && !f.showIf(item)) return;
+      const disabled = f.disableIf ? f.disableIf(item) : false;
+      const dis = disabled ? 'disabled' : '';
       const path = `${listKey}[${idx}].${f.k}`;
       const val = item[f.k];
       const spanStyle = f.span===2 ? 'grid-column:1/-1;' : '';
+      const disCls = disabled ? ' field-disabled' : '';
       if(f.type==="checkbox"){
-        html += `<div class="field" style="${spanStyle}"><label class="check-opt"><input type="checkbox" data-path="${path}" ${val?'checked':''}> ${f.label}</label></div>`;
+        html += `<div class="field${disCls}" style="${spanStyle}"><label class="check-opt"><input type="checkbox" data-path="${path}" ${val?'checked':''} ${dis}> ${f.label}</label></div>`;
       } else if(f.type==="owner"){
         const owners = ["Commun","Investisseur 1"];
         if(state.coInvestisseur) owners.push("Investisseur 2");
@@ -483,11 +497,11 @@ function renderRepeatable(listKey, ownerAware){
           owners.map(o=>`<span class="owner-chip ${val===o?'active':''}" data-owner="${path}" data-value="${o}">${ownerLabel(o)}</span>`).join('') +
           `</div></div>`;
       } else if(f.type==="select"){
-        html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><select data-path="${path}"><option value="">— Sélectionner —</option>${f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+        html += `<div class="field${disCls}" style="${spanStyle}"><label>${f.label}</label><select data-path="${path}" ${dis}><option value="">— Sélectionner —</option>${f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
       } else if(f.type==="textarea"){
-        html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><textarea data-path="${path}">${val?escapeHtml(val):''}</textarea></div>`;
+        html += `<div class="field${disCls}" style="${spanStyle}"><label>${f.label}</label><textarea data-path="${path}" ${dis}>${val?escapeHtml(val):''}</textarea></div>`;
       } else {
-        html += `<div class="field" style="${spanStyle}"><label>${f.label}</label><input type="${f.type}" data-path="${path}" value="${val?escapeHtml(val):''}"></div>`;
+        html += `<div class="field${disCls}" style="${spanStyle}"><label>${f.label}</label><input type="${f.type}" data-path="${path}" value="${val?escapeHtml(val):''}" ${dis}></div>`;
       }
     });
     html += `</div></div>`;
@@ -511,8 +525,13 @@ function investorFieldSet(prefix, isSecond){
     ${field(state, `${prefix}.email`, "Email", "email", {required:true})}
   </div>
   <h3 style="margin-top:22px;font-size:14px;color:var(--dark-green);">Adresse</h3>
+  ${isSecond?`<button type="button" class="btn-add" data-copyaddr="${prefix}" style="margin-bottom:14px;">📋 Copier l'adresse de ${investorLabel("investisseur1","l'investisseur 1")}</button>`:''}
   <div class="grid2">
-    ${field(state, `${prefix}.adresseNum`, "Numéro et rue", "text")}
+    <div class="field span-2" style="position:relative;">
+      <label class="req" for="addrInput_${prefix}">Numéro et rue</label>
+      <input type="text" id="addrInput_${prefix}" value="${escapeHtml(getVal(state,`${prefix}.adresseNum`))}" autocomplete="off" placeholder="Commencez à taper votre adresse…">
+      <div class="addr-suggestions" id="addrSuggest_${prefix}"></div>
+    </div>
     ${field(state, `${prefix}.adresseCP`, "Code postal", "text")}
     ${field(state, `${prefix}.adresseVille`, "Ville", "text")}
     ${field(state, `${prefix}.adressePays`, "Pays de résidence", "text")}
@@ -553,12 +572,15 @@ function renderIdentite(){
 
 function renderFamille(){
   const inv2 = state.coInvestisseur;
+  const foyerTitle = inv2
+    ? `Foyer ${investorLabel("investisseur1","Investisseur 1")} & ${investorLabel("investisseur2","Investisseur 2")}`
+    : investorLabel("investisseur1","Investisseur 1");
   return `
   <div class="section-eyebrow">02 · Votre foyer</div>
   <h2 class="section-title">Situation de famille</h2>
 
   <div class="subsection">
-    <h3>${investorLabel("investisseur1","Investisseur 1")}</h3>
+    <h3>${foyerTitle}</h3>
     ${radioGroup("investisseur1.situationFamille","Situation de famille",["Marié(e)","Célibataire","Séparé(e)","Divorcé(e)","Union libre","Pacsé(e)"],true)}
     ${field(state,"investisseur1.situationFamilleDepuis","Depuis le","date")}
     <div id="regimeBlock1" style="${['Marié(e)'].includes(getVal(state,'investisseur1.situationFamille'))?'':'display:none;'}">
@@ -570,17 +592,6 @@ function renderFamille(){
       ${field(state,"investisseur1.envisageMariageDate","Date envisagée","date")}
     </div>
   </div>
-
-  ${inv2?`
-  <div class="subsection">
-    <h3>${investorLabel("investisseur2","Investisseur 2")}</h3>
-    ${radioGroup("investisseur2.situationFamille","Situation de famille",["Marié(e)","Célibataire","Séparé(e)","Divorcé(e)","Union libre","Pacsé(e)"],true)}
-    ${field(state,"investisseur2.situationFamilleDepuis","Depuis le","date")}
-    <div id="regimeBlock2" style="${['Marié(e)'].includes(getVal(state,'investisseur2.situationFamille'))?'':'display:none;'}">
-      ${radioGroup("investisseur2.regimeMatrimonial","Régime matrimonial",["Sans contrat","Séparation de biens","Autre"],true)}
-      ${field(state,"investisseur2.regimeMatrimonialPrecision","Précisez si régime particulier","text")}
-    </div>
-  </div>`:''}
 
   <div class="subsection">
     <h3>Protection du conjoint et de la famille</h3>
@@ -604,7 +615,7 @@ function renderPro(){
   <p class="section-intro">Conformément à l'article L. 541-8-1 4° du code monétaire et financier, nous avons l'obligation de nous renseigner sur votre situation financière.</p>
 
   <div class="subsection">
-    <h3>Investisseur 1 — Profession</h3>
+    <h3>${investorLabel("investisseur1","Investisseur 1")} — Profession</h3>
     ${radioGroup("investisseur1.statutPro","Statut",["Salarié(e)","Demandeur d'emploi","Fonctionnaire","Indépendant / Profession libérale","Chef d'entreprise","Étudiant(e)","Retraité(e)"],true)}
     <div class="grid2">
       ${field(state,"investisseur1.libelleProfession","Libellé de votre profession","text",{required:true})}
@@ -614,7 +625,7 @@ function renderPro(){
   </div>
 
   ${inv2?`<div class="subsection">
-    <h3>Investisseur 2 — Profession</h3>
+    <h3>${investorLabel("investisseur2","Investisseur 2")} — Profession</h3>
     ${radioGroup("investisseur2.statutPro","Statut",["Salarié(e)","Demandeur d'emploi","Fonctionnaire","Indépendant / Profession libérale","Chef d'entreprise","Étudiant(e)","Retraité(e)"],true)}
     <div class="grid2">
       ${field(state,"investisseur2.libelleProfession","Libellé de votre profession","text",{required:true})}
@@ -625,7 +636,7 @@ function renderPro(){
 
   <div class="subsection">
     <h3 class="req">Revenus annuels nets</h3>
-    <div class="hint">L'idéal serait de nous transmettre votre dernier avis d'imposition. Si vous avez des revenus fonciers ou BIC/BNC/BA, les annexes de déclaration seraient très utiles. Merci de renseigner au moins une ligne de revenu.</div>
+    <div class="hint">Merci de détailler ici vos revenus professionnels (salaires, BIC/BNC/BA, etc.). Votre avis d'imposition avec les annexes nous sera également très utile pour analyser en détail vos sources de revenus & charges. Merci de renseigner au moins une ligne de revenu.</div>
     ${renderRevenus()}
   </div>
 
@@ -649,7 +660,7 @@ function renderRevenus(){
     html += `<div class="rep-item"><div class="rep-item-head"><span class="idx">Revenu ${idx+1}</span><button type="button" class="rep-remove" data-remove="revenus:${idx}">Supprimer</button></div>
     <div class="grid3">
       <div class="field"><label>Nature</label><select data-path="revenus[${idx}].nature"><option value="">— Sélectionner —</option>
-        ${["Salaires","BNC","BIC","Pensions","Revenus fonciers","Dividendes","Autres"].map(o=>`<option value="${o}" ${r.nature===o?'selected':''}>${o}</option>`).join('')}
+        ${["Salaires","Rémunération de gérance","BNC","BIC","Pensions","Dividendes","Autres"].map(o=>`<option value="${o}" ${r.nature===o?'selected':''}>${o}</option>`).join('')}
       </select></div>
       <div class="field"><label>Montant annuel (€)</label><input type="number" data-path="revenus[${idx}].montant" value="${r.montant||''}"></div>
       <div class="field"><label>Détenteur</label><select data-path="revenus[${idx}].detenteur"><option value="">— Sélectionner —</option>${owners.map(o=>`<option value="${o}" ${r.detenteur===o?'selected':''}>${ownerLabel(o)}</option>`).join('')}</select></div>
@@ -769,12 +780,12 @@ function renderObjectifs(){
     <h3>Effort d'épargne</h3>
     <div class="hint">Cette épargne ne doit pas vous mettre en difficulté au quotidien.</div>
     <div class="grid2">
-      ${field(state,"investisseur1.epargneMensuelle", state.coInvestisseur?"Épargne mensuelle — Investisseur 1 (€/mois)":"Épargne mensuelle envisageable (€/mois)","number",{required:true})}
-      ${state.coInvestisseur?field(state,"investisseur2.epargneMensuelle","Épargne mensuelle — Investisseur 2 (€/mois)","number",{required:true}):''}
+      ${field(state,"investisseur1.epargneMensuelle", state.coInvestisseur?`Épargne mensuelle — ${investorLabel("investisseur1","Investisseur 1")} (€/mois)`:"Épargne mensuelle envisageable (€/mois)","number",{required:true})}
+      ${state.coInvestisseur?field(state,"investisseur2.epargneMensuelle",`Épargne mensuelle — ${investorLabel("investisseur2","Investisseur 2")} (€/mois)`,"number",{required:true}):''}
     </div>
     <div class="grid2">
-      ${field(state,"investisseur1.epargnePrecaution", state.coInvestisseur?"Épargne de précaution souhaitée — Investisseur 1 (€)":"Épargne de précaution souhaitée (€)","number",{required:true})}
-      ${state.coInvestisseur?field(state,"investisseur2.epargnePrecaution","Épargne de précaution souhaitée — Investisseur 2 (€)","number",{required:true}):''}
+      ${field(state,"investisseur1.epargnePrecaution", state.coInvestisseur?`Épargne de précaution souhaitée — ${investorLabel("investisseur1","Investisseur 1")} (€)`:"Épargne de précaution souhaitée (€)","number",{required:true})}
+      ${state.coInvestisseur?field(state,"investisseur2.epargnePrecaution",`Épargne de précaution souhaitée — ${investorLabel("investisseur2","Investisseur 2")} (€)`,"number",{required:true}):''}
     </div>
     ${field(state,"objectifsPrecisions","Précisions ou autres éléments pouvant impacter cette étude","textarea",{span2:true})}
   </div>
@@ -791,14 +802,17 @@ function accordion(id, title, bodyHtml){
 function renderConformite(){
   const inv2 = state.coInvestisseur;
   function ppeBlock(prefix, title){
+    const expose = getVal(state,`${prefix}.ppeExpose`);
+    const lien = getVal(state,`${prefix}.ppeLien`);
+    const disabled = expose==="Non" && lien==="Non";
     return `<div class="subsection"><h3>${title}</h3>
       ${radioGroup(`${prefix}.ppeExpose`,"Êtes-vous une Personne Politiquement Exposée (PPE) ?",["Oui","Non"],true)}
       ${radioGroup(`${prefix}.ppeLien`,"Avez-vous un lien familial ou êtes-vous étroitement associé à une PPE ?",["Oui","Non"],true)}
       <div class="grid2">
-        ${field(state,`${prefix}.ppeFonction`,"Quelle fonction a été exercée ?","text")}
-        ${field(state,`${prefix}.ppeDepuis`,"Depuis quelle date","date")}
+        ${field(state,`${prefix}.ppeFonction`,"Quelle fonction a été exercée ?","text",{disabled})}
+        ${field(state,`${prefix}.ppeDepuis`,"Depuis quelle date","date",{disabled})}
       </div>
-      ${radioGroup(`${prefix}.ppeLieu`,"La fonction a été exercée",["En France","À l'étranger"])}
+      ${radioGroup(`${prefix}.ppeLieu`,"La fonction a été exercée",["En France","À l'étranger"],false,disabled)}
       <div id="ppeAutrePays_${prefix}" style="${getVal(state,`${prefix}.ppeLieu`)==="À l'étranger"?'':'display:none;'}">
         ${field(state,`${prefix}.ppeAutrePays`,"Précisez le pays","text")}
       </div>
@@ -809,6 +823,9 @@ function renderConformite(){
       ${radioGroup(`${prefix}.fatcaCitoyenUSA`,"Êtes-vous citoyen des USA ?",["Oui","Non"],true)}
       ${radioGroup(`${prefix}.fatcaResidentUSA`,"Êtes-vous résident fiscal des USA ?",["Oui","Non"],true)}
       ${radioGroup(`${prefix}.fatcaTIN`,"Possédez-vous un n° TIN ?",["Oui","Non"],true)}
+      <div id="fatcaTINNumero_${prefix}" style="${getVal(state,`${prefix}.fatcaTIN`)==="Oui"?'':'display:none;'}">
+        ${field(state,`${prefix}.fatcaTINNumero`,"Numéro TIN","text",{required:true})}
+      </div>
       <p class="obj-note">Si vous répondez "Oui" à l'une de ces questions, un document W-9 (ou W-8BEN si vous n'êtes plus résident fiscal US) vous sera demandé par ailleurs.</p>
     </div>`;
   }
@@ -819,6 +836,9 @@ function renderConformite(){
         ${field(state,`${prefix}.crsPays`,"Lequel ?","text",{required:true})}
       </div>
       ${radioGroup(`${prefix}.crsNumFiscal`,"Possédez-vous le n° fiscal de ce pays ?",["Oui","Non"],true)}
+      <div id="crsNumFiscalNumero_${prefix}" style="${getVal(state,`${prefix}.crsNumFiscal`)==="Oui"?'':'display:none;'}">
+        ${field(state,`${prefix}.crsNumFiscalNumero`,"Numéro fiscal","text",{required:true})}
+      </div>
     </div>`;
   }
 
@@ -844,8 +864,9 @@ function renderConformite(){
     <h3>Signature</h3>
     <p class="section-intro">En signant ce document, vous certifiez sur l'honneur l'exactitude des réponses apportées et vous engagez à informer sans délai Metentis Patrimoine de tout changement de circonstances pouvant modifier votre statut, dans les 30 jours suivant ce changement.</p>
     <div class="attest-box">
+      ${inv2?`<span class="tag" style="display:block;margin-bottom:10px;">${investorLabel("investisseur1","Investisseur 1")}</span>`:''}
       <label class="check-opt">
-        <input type="checkbox" id="signatureConsent" data-path="investisseur1.signatureConsent">
+        <input type="checkbox" id="signatureConsent1" data-path="investisseur1.signatureConsent">
         Je certifie sur l'honneur l'exactitude des informations transmises dans ce formulaire, je reconnais avoir pris connaissance des informations relatives au traitement de mes données personnelles (RGPD), à la réglementation PPE, FATCA et CRS/AEOI décrites ci-dessus, et j'y consens.
       </label>
       <div class="grid2" style="margin-top:16px;">
@@ -853,6 +874,18 @@ function renderConformite(){
         ${field(state,"investisseur1.signatureDate","Date","date",{required:true})}
       </div>
     </div>
+    ${inv2?`
+    <div class="attest-box" style="margin-top:18px;">
+      <span class="tag" style="display:block;margin-bottom:10px;">${investorLabel("investisseur2","Investisseur 2")}</span>
+      <label class="check-opt">
+        <input type="checkbox" id="signatureConsent2" data-path="investisseur2.signatureConsent">
+        Je certifie sur l'honneur l'exactitude des informations transmises dans ce formulaire, je reconnais avoir pris connaissance des informations relatives au traitement de mes données personnelles (RGPD), à la réglementation PPE, FATCA et CRS/AEOI décrites ci-dessus, et j'y consens.
+      </label>
+      <div class="grid2" style="margin-top:16px;">
+        ${field(state,"investisseur2.signatureNom","Nom tapé en signature",'text',{required:true})}
+        ${field(state,"investisseur2.signatureDate","Date","date",{required:true})}
+      </div>
+    </div>`:''}
   </div>
   `;
 }
@@ -966,6 +999,21 @@ function bindStepEvents(){
     });
   });
   document.getElementById("pdfDraftBtn")?.addEventListener("click", generatePDF);
+
+  // address autocomplete (both investors, harmless no-op if elements absent)
+  bindAddressAutocomplete("investisseur1");
+  bindAddressAutocomplete("investisseur2");
+
+  // copy investisseur1's address onto investisseur2
+  document.querySelectorAll("[data-copyaddr]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const target = el.dataset.copyaddr;
+      ["adresseNum","adresseCP","adresseVille","adressePays"].forEach(k=>{
+        setVal(state, `${target}.${k}`, getVal(state, `investisseur1.${k}`));
+      });
+      renderSteps(false);
+    });
+  });
 }
 
 function blankRowFor(key){
@@ -975,33 +1023,85 @@ function blankRowFor(key){
   return row;
 }
 
+/* ============ ADDRESS AUTOCOMPLETE (API Adresse — data.gouv.fr, gratuite, sans clé) ============ */
+const addressDebounceTimers = {};
+function bindAddressAutocomplete(prefix){
+  const input = document.getElementById(`addrInput_${prefix}`);
+  const box = document.getElementById(`addrSuggest_${prefix}`);
+  if(!input || !box) return;
+  input.addEventListener("input", ()=>{
+    setVal(state, `${prefix}.adresseNum`, input.value);
+    clearTimeout(addressDebounceTimers[prefix]);
+    const q = input.value.trim();
+    if(q.length<4){ box.classList.remove("show"); box.innerHTML=""; return; }
+    addressDebounceTimers[prefix] = setTimeout(()=>fetchAddressSuggestions(prefix,q,box), 350);
+  });
+  input.addEventListener("blur", ()=>{ setTimeout(()=>box.classList.remove("show"), 150); });
+}
+async function fetchAddressSuggestions(prefix,q,box){
+  try{
+    const resp = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5`);
+    if(!resp.ok) throw new Error("addr api error");
+    const data = await resp.json();
+    const feats = data.features || [];
+    if(feats.length===0){ box.classList.remove("show"); box.innerHTML=""; return; }
+    box.innerHTML = feats.map((f,i)=>`<div class="addr-suggestion-item" data-addrsel="${i}">${escapeHtml(f.properties.label)}</div>`).join('');
+    box.classList.add("show");
+    box.querySelectorAll("[data-addrsel]").forEach(el=>{
+      el.addEventListener("mousedown", (e)=>{
+        e.preventDefault();
+        const idx = parseInt(el.dataset.addrsel);
+        applyAddressSelection(prefix, feats[idx]);
+      });
+    });
+  }catch(e){ box.classList.remove("show"); box.innerHTML=""; }
+}
+function applyAddressSelection(prefix, feat){
+  const p = feat.properties || {};
+  setVal(state, `${prefix}.adresseNum`, p.name || p.label || "");
+  setVal(state, `${prefix}.adresseCP`, p.postcode || "");
+  setVal(state, `${prefix}.adresseVille`, p.city || "");
+  setVal(state, `${prefix}.adressePays`, "France");
+  renderSteps(false);
+}
+
 function handleReactiveFields(path){
-  // re-render (without scrolling) only when a field affects conditional visibility
-  const reactive = ["logement","situationFamille","envisageMariage","ppeLieu","tmiConnu","crsResidentAutre"];
-  const isReactive = reactive.some(r=>path.includes(r)) || /^placements\[\d+\]\.type$/.test(path);
+  // re-render (without scrolling) only when a field affects conditional visibility.
+  // Uses precise suffix matching (not "includes") so e.g. ".situationFamille" never
+  // accidentally matches ".situationFamilleDepuis" and breaks typing in that date field.
+  const exactSuffixes = [
+    ".logement", ".situationFamille", ".envisageMariage", ".ppeLieu", ".tmiConnu",
+    ".crsResidentAutre", ".fatcaTIN", ".crsNumFiscal", ".ppeExpose", ".ppeLien", ".rpSecondaire"
+  ];
+  const isReactive = exactSuffixes.some(suf=>path.endsWith(suf)) || /^placements\[\d+\]\.type$/.test(path);
   if(isReactive) renderSteps(false);
 }
 
 /* ============ VALIDATION ============ */
+function isValidEmail(v){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
+}
 function validateStep(i){
   const errors = [];
 
   if(i===0){
     const req = ["investisseur1.nom","investisseur1.prenom","investisseur1.dateNaissance","investisseur1.mobile","investisseur1.email"];
     req.forEach(p=>{ if(!getVal(state,p)) errors.push("les champs d'identité obligatoires de l'investisseur 1 (nom, prénom, date de naissance, mobile, email)"); });
+    if(getVal(state,"investisseur1.email") && !isValidEmail(getVal(state,"investisseur1.email"))){
+      errors.push("une adresse email valide pour l'investisseur 1");
+    }
     if(state.coInvestisseur){
       const req2 = ["investisseur2.nom","investisseur2.prenom","investisseur2.dateNaissance","investisseur2.mobile","investisseur2.email"];
       req2.forEach(p=>{ if(!getVal(state,p)) errors.push("les champs d'identité obligatoires de l'investisseur 2 (nom, prénom, date de naissance, mobile, email)"); });
+      if(getVal(state,"investisseur2.email") && !isValidEmail(getVal(state,"investisseur2.email"))){
+        errors.push("une adresse email valide pour l'investisseur 2");
+      }
     }
   }
 
   if(i===1){
-    if(!getVal(state,"investisseur1.situationFamille")) errors.push("la situation de famille (investisseur 1)");
-    if(getVal(state,"investisseur1.situationFamille")==="Marié(e)" && !getVal(state,"investisseur1.regimeMatrimonial")) errors.push("le régime matrimonial (investisseur 1)");
-    if(state.coInvestisseur){
-      if(!getVal(state,"investisseur2.situationFamille")) errors.push("la situation de famille (investisseur 2)");
-      if(getVal(state,"investisseur2.situationFamille")==="Marié(e)" && !getVal(state,"investisseur2.regimeMatrimonial")) errors.push("le régime matrimonial (investisseur 2)");
-    }
+    if(!getVal(state,"investisseur1.situationFamille")) errors.push("la situation de famille du foyer");
+    if(getVal(state,"investisseur1.situationFamille")==="Marié(e)" && !getVal(state,"investisseur1.regimeMatrimonial")) errors.push("le régime matrimonial");
   }
 
   if(i===2){
@@ -1052,11 +1152,13 @@ function validateStep(i){
       if(!getVal(state,`${prefix}.fatcaCitoyenUSA`)) errors.push(`FATCA — citoyen USA ${label}`);
       if(!getVal(state,`${prefix}.fatcaResidentUSA`)) errors.push(`FATCA — résident fiscal USA ${label}`);
       if(!getVal(state,`${prefix}.fatcaTIN`)) errors.push(`FATCA — n° TIN ${label}`);
+      if(getVal(state,`${prefix}.fatcaTIN`)==="Oui" && !getVal(state,`${prefix}.fatcaTINNumero`)) errors.push(`FATCA — numéro TIN ${label}`);
     };
     const checkCRS = (prefix,label)=>{
       if(!getVal(state,`${prefix}.crsResidentAutre`)) errors.push(`CRS — résident fiscal d'un autre pays ${label}`);
       if(getVal(state,`${prefix}.crsResidentAutre`)==="Oui" && !getVal(state,`${prefix}.crsPays`)) errors.push(`CRS — pays de résidence fiscale ${label}`);
       if(!getVal(state,`${prefix}.crsNumFiscal`)) errors.push(`CRS — n° fiscal ${label}`);
+      if(getVal(state,`${prefix}.crsNumFiscal`)==="Oui" && !getVal(state,`${prefix}.crsNumFiscalNumero`)) errors.push(`CRS — numéro fiscal ${label}`);
     };
     const l1 = state.coInvestisseur ? "(investisseur 1)" : "";
     checkPPE("investisseur1", l1); checkFATCA("investisseur1", l1); checkCRS("investisseur1", l1);
@@ -1064,7 +1166,10 @@ function validateStep(i){
       checkPPE("investisseur2","(investisseur 2)"); checkFATCA("investisseur2","(investisseur 2)"); checkCRS("investisseur2","(investisseur 2)");
     }
     if(!state.investisseur1.signatureConsent || !state.investisseur1.signatureNom || !state.investisseur1.signatureDate){
-      errors.push("la case d'attestation, votre nom et la date de signature");
+      errors.push("la case d'attestation, votre nom et la date de signature (investisseur 1)");
+    }
+    if(state.coInvestisseur && (!state.investisseur2.signatureConsent || !state.investisseur2.signatureNom || !state.investisseur2.signatureDate)){
+      errors.push("la case d'attestation, le nom et la date de signature (investisseur 2)");
     }
   }
 
@@ -1180,8 +1285,8 @@ function generatePDF(){
     }
   }
 
-  function block_famille(prefix,label){
-    const s = state[prefix];
+  function block_famille(label){
+    const s = state.investisseur1;
     h(`${label} — Situation de famille`);
     qa("Situation de famille", s.situationFamille);
     qa("Depuis le", s.situationFamilleDepuis);
@@ -1236,9 +1341,11 @@ function generatePDF(){
     qa("Citoyen des USA ?", s.fatcaCitoyenUSA);
     qa("Résident fiscal des USA ?", s.fatcaResidentUSA);
     qa("Possédez-vous un n° TIN ?", s.fatcaTIN);
+    if(s.fatcaTIN==="Oui") qa("Numéro TIN", s.fatcaTINNumero);
     qa("Résident fiscal d'un pays autre que la France / les USA ?", s.crsResidentAutre);
     if(s.crsResidentAutre==="Oui") qa("Lequel ?", s.crsPays);
     qa("Possédez-vous le n° fiscal de ce pays ?", s.crsNumFiscal);
+    if(s.crsNumFiscal==="Oui") qa("Numéro fiscal", s.crsNumFiscalNumero);
   }
 
   const label1 = investorLabelPdf("investisseur1","Investisseur 1");
@@ -1250,8 +1357,7 @@ function generatePDF(){
   if(inv2) block_identite("investisseur2", label2);
 
   // 2. Famille
-  block_famille("investisseur1", label1);
-  if(inv2) block_famille("investisseur2", label2);
+  block_famille(inv2 ? `Foyer ${label1} & ${label2}` : label1);
   h("Protection du conjoint et de la famille");
   qa("Souhaitez-vous que l'on réfléchisse à une solution de protection ? Situation particulière ?", state.protectionConjoint);
   h("Enfants");
@@ -1310,9 +1416,14 @@ function generatePDF(){
   if(inv2) block_conformite("investisseur2", label2);
 
   h("Signature & attestation");
-  qa("Signé par", state.investisseur1.signatureNom);
-  qa("Date de signature", state.investisseur1.signatureDate);
-  qa("Consentement RGPD / PPE / FATCA / CRS", state.investisseur1.signatureConsent ? "Case cochée — accepté" : "Non renseigné");
+  qa(inv2?`Signé par — ${label1}`:"Signé par", state.investisseur1.signatureNom);
+  qa(inv2?`Date de signature — ${label1}`:"Date de signature", state.investisseur1.signatureDate);
+  qa(inv2?`Consentement RGPD / PPE / FATCA / CRS — ${label1}`:"Consentement RGPD / PPE / FATCA / CRS", state.investisseur1.signatureConsent ? "Case cochée — accepté" : "Non renseigné");
+  if(inv2){
+    qa(`Signé par — ${label2}`, state.investisseur2.signatureNom);
+    qa(`Date de signature — ${label2}`, state.investisseur2.signatureDate);
+    qa(`Consentement RGPD / PPE / FATCA / CRS — ${label2}`, state.investisseur2.signatureConsent ? "Case cochée — accepté" : "Non renseigné");
+  }
 
   // Annexe RGPD — texte intégral, reproduit en entier (non replié)
   doc.addPage(); runningHeader(); y=90;
