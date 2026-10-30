@@ -229,6 +229,17 @@ footer a{color:var(--dark-green); text-decoration:underline;}
 <nav class="steps-nav" id="stepsNav"></nav>
 
 <main>
+  <div class="card" id="restoreBanner" style="display:none;">
+    <div id="restoreFromLink" style="display:none;">
+      <p><strong>Dossier restauré.</strong> Les réponses du client ont été rechargées dans le questionnaire ci-dessous.</p>
+      <div class="pdf-btn-row"><button type="button" class="btn btn-primary" id="restoreDlBtn">Télécharger le PDF</button></div>
+    </div>
+    <div id="restoreFromJson" style="display:none;">
+      <p><strong>Restaurer un dossier depuis l'email Formspree.</strong> Collez ci-dessous la valeur du champ « donnees_completes_json » (le bloc qui commence par { ), puis générez le PDF.</p>
+      <textarea id="restoreJsonInput" rows="6" style="width:100%;font-size:12px;" placeholder='{"coInvestisseur":true, ...}'></textarea>
+      <div class="pdf-btn-row"><button type="button" class="btn btn-primary" id="restoreLoadBtn">Charger et générer le PDF</button></div>
+    </div>
+  </div>
   <form id="kycForm" novalidate>
     <div id="stepsContainer"></div>
   </form>
@@ -1459,22 +1470,49 @@ function addLegalFooter(doc){
   }
 }
 
-/* ============ URL STATE RESTORE ============ */
-function encodeStateToURL(){
-  const json = JSON.stringify(state);
-  const b64 = btoa(unescape(encodeURIComponent(json)));
-  return `${window.location.origin}${window.location.pathname}?data=${b64}`;
+/* ============ URL STATE RESTORE (lien compressé + outil de restauration) ============ */
+async function _deflateB64url(str){
+  const stream = new Blob([str]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+  const buf = new Uint8Array(await new Response(stream).arrayBuffer());
+  let bin = ""; for(let i=0;i<buf.length;i++) bin += String.fromCharCode(buf[i]);
+  return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
-function restoreStateFromURL(){
-  const params = new URLSearchParams(window.location.search);
-  const data = params.get("data");
-  if(!data) return false;
+async function _inflateB64url(s){
+  s = s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s += "=";
+  const bin = atob(s); const buf = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
+  const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return await new Response(stream).text();
+}
+// Lien court : état compressé (deflate) placé dans le fragment "#z=" (jamais envoyé à un serveur).
+async function encodeStateToURL(){
+  const json = JSON.stringify(state);
+  const base = `${window.location.origin}${window.location.pathname}`;
   try{
-    const json = decodeURIComponent(escape(atob(data)));
-    const restored = JSON.parse(json);
-    Object.assign(state, restored);
+    if(typeof CompressionStream === "undefined") throw new Error("no CompressionStream");
+    return `${base}#z=${await _deflateB64url(json)}`;
+  }catch(e){
+    return `${base}?data=${btoa(unescape(encodeURIComponent(json)))}`;
+  }
+}
+// Accepte : #z=... (nouveau), ?data=... ou #data=... (anciens liens base64), ou un JSON brut.
+async function restoreStateFromURL(){
+  try{
+    const hash = window.location.hash.replace(/^#/,"");
+    const hp = new URLSearchParams(hash);
+    const qp = new URLSearchParams(window.location.search);
+    let json = null;
+    if(hp.get("z")) json = await _inflateB64url(hp.get("z"));
+    else if(hp.get("data")) json = decodeURIComponent(escape(atob(hp.get("data"))));
+    else if(qp.get("data")) json = decodeURIComponent(escape(atob(qp.get("data"))));
+    if(!json) return false;
+    Object.assign(state, JSON.parse(json));
     return true;
   }catch(e){ console.error("Impossible de restaurer les données", e); return false; }
+}
+function restoreFromJsonText(txt){
+  const parsed = JSON.parse(txt.trim());
+  Object.assign(state, parsed);
 }
 
 /* ============ SUBMIT ============ */
@@ -1485,7 +1523,7 @@ document.getElementById("kycForm").addEventListener("submit", async (e)=>{
   const submitBtn = document.getElementById("submitBtn");
   submitBtn.disabled = true; submitBtn.textContent = "Envoi en cours…";
 
-  const restoreLink = encodeStateToURL();
+  const restoreLink = await encodeStateToURL();
   const payload = {
     _subject: `Nouveau recueil KYC — ${state.investisseur1.nom || ''} ${state.investisseur1.prenom || ''}`,
     investisseur1_nom: state.investisseur1.nom,
@@ -1521,8 +1559,27 @@ if(METENTIS_LOGO_BASE64){
   if(logoEl){ logoEl.src = METENTIS_LOGO_BASE64; }
   if(cornerBadge){ cornerBadge.style.display = "inline-flex"; }
 }
-restoreStateFromURL();
-renderSteps();
+(async function initApp(){
+  const restored = await restoreStateFromURL();
+  renderSteps();
+  const banner = document.getElementById("restoreBanner");
+  const toolMode = window.location.hash === "#restaurer";
+  if(banner && (restored || toolMode)){
+    banner.style.display = "block";
+    document.getElementById("restoreFromLink").style.display = restored ? "block" : "none";
+    document.getElementById("restoreFromJson").style.display = toolMode ? "block" : "none";
+  }
+  const dl = document.getElementById("restoreDlBtn");
+  if(dl) dl.addEventListener("click", generatePDF);
+  const loadBtn = document.getElementById("restoreLoadBtn");
+  if(loadBtn) loadBtn.addEventListener("click", ()=>{
+    try{
+      restoreFromJsonText(document.getElementById("restoreJsonInput").value);
+      renderSteps(false);
+      generatePDF();
+    }catch(e){ alert("Le texte collé n'est pas un JSON valide. Copiez l'intégralité de la valeur « donnees_completes_json » de l'email (de { à })."); }
+  });
+})();
 </script>
 </body>
 </html>
